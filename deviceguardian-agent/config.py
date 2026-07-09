@@ -22,7 +22,7 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "sampling_interval_seconds": 30,
-    "backend_url": "http://localhost:8000",
+    "backend_url": "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1",
     "auto_start": True,
     "retry_interval_seconds": 10
 }
