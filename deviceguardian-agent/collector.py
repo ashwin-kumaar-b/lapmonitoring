@@ -326,19 +326,43 @@ class SystemTelemetryCollector:
         vm = psutil.virtual_memory()
         
         # 3. Disk Storage Metrics
+        total_total = 0
+        total_free = 0
+        total_used = 0
         try:
-            disk_usage = psutil.disk_usage("C:\\")
+            partitions = psutil.disk_partitions(all=False)
+            for part in partitions:
+                # Ignore CD-ROMs, empty fstypes, and virtual mount points
+                if 'cdrom' in part.opts or part.fstype == '':
+                    continue
+                try:
+                    usage = psutil.disk_usage(part.mountpoint)
+                    total_total += usage.total
+                    total_free += usage.free
+                    total_used += usage.used
+                except Exception:
+                    pass
         except Exception:
+            pass
+
+        if total_total == 0:
             try:
-                disk_usage = psutil.disk_usage("/")
+                disk_usage = psutil.disk_usage("C:\\")
             except Exception:
-                # Dummy object
-                class DiskDummy:
-                    percent = 0.0
-                    free = 0
-                    total = 0
-                    used = 0
-                disk_usage = DiskDummy()
+                try:
+                    disk_usage = psutil.disk_usage("/")
+                except Exception:
+                    class DiskDummy:
+                        percent = 0.0
+                        free = 0
+                        total = 0
+                        used = 0
+                    disk_usage = DiskDummy()
+            total_total = disk_usage.total
+            total_free = disk_usage.free
+            total_used = getattr(disk_usage, "used", disk_usage.total - disk_usage.free)
+
+        disk_usage_percent = round((total_used / total_total) * 100, 1) if total_total > 0 else 0.0
 
         # 4. Battery Metrics
         battery_info = psutil.sensors_battery()
@@ -365,10 +389,10 @@ class SystemTelemetryCollector:
                 "ram_usage_percent": float(vm.percent)
             },
             "storage": {
-                "disk_usage_percent": float(disk_usage.percent),
-                "free_space_bytes": int(disk_usage.free),
-                "total_space_bytes": int(disk_usage.total),
-                "used_space_bytes": int(getattr(disk_usage, "used", disk_usage.total - disk_usage.free))
+                "disk_usage_percent": float(disk_usage_percent),
+                "free_space_bytes": int(total_free),
+                "total_space_bytes": int(total_total),
+                "used_space_bytes": int(total_used)
             },
             "battery": {
                 "percentage": battery_pct,
