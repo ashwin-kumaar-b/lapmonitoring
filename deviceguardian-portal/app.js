@@ -466,6 +466,33 @@ document.addEventListener("DOMContentLoaded", () => {
             
             let filteredData = data;
             if (allowedUuids !== null) {
+                // If there are no mappings in the database yet, try to auto-associate based on email prefix
+                if (allowedUuids.length === 0) {
+                    const prefix = loggedInEmail.split("@")[0].toLowerCase();
+                    const matchedDevice = data.find(row => {
+                        const devName = (row.device_name || "").toLowerCase();
+                        const winUser = (row.payload?.system?.username || "").toLowerCase();
+                        return devName.includes(prefix) || winUser.includes(prefix) || prefix.includes(winUser);
+                    });
+
+                    if (matchedDevice) {
+                        console.log("Auto-mapping device:", matchedDevice.device_name, "to", loggedInEmail);
+                        allowedUuids.push(matchedDevice.device_uuid);
+                        
+                        // Async write to database to persist this link permanently
+                        fetch("https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings", {
+                            method: "POST",
+                            headers: {
+                                "apikey": supabase_key,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                username: loggedInEmail,
+                                device_uuid: matchedDevice.device_uuid
+                            })
+                        }).catch(err => console.error("Error persisting auto-mapping:", err));
+                    }
+                }
                 filteredData = data.filter(row => allowedUuids.includes(row.device_uuid));
             }
             
