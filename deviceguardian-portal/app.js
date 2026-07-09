@@ -16,6 +16,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const emailFieldError = document.getElementById("email-error");
     const btnNavSignout = document.getElementById("btn-nav-signout");
 
+    // Signup / Signin Mode elements & state
+    let isSignUpMode = false;
+    const toggleSignupLink = document.getElementById("toggle-signup-link");
+    const loginTitle = document.getElementById("login-title");
+    const loginSubtitle = document.getElementById("login-subtitle");
+    const btnSubmit = document.getElementById("btn-login-submit");
+    const signupPromptEl = document.getElementById("signup-prompt-el");
+
+    function handleToggleSignup(e) {
+        e.preventDefault();
+        isSignUpMode = !isSignUpMode;
+        
+        if (isSignUpMode) {
+            loginTitle.textContent = "Create Account";
+            loginSubtitle.textContent = "Please sign up to get started";
+            btnSubmit.textContent = "Sign Up";
+            signupPromptEl.innerHTML = `Already have an account? <a href="#" id="toggle-signup-link">Sign in</a>`;
+        } else {
+            loginTitle.textContent = "Welcome";
+            loginSubtitle.textContent = "Please sign in to continue";
+            btnSubmit.textContent = "Sign In";
+            signupPromptEl.innerHTML = `Don't have an account? <a href="#" id="toggle-signup-link">Sign up</a>`;
+        }
+        
+        // Re-bind to the new element created by innerHTML replacement
+        document.getElementById("toggle-signup-link").addEventListener("click", handleToggleSignup);
+    }
+    if (toggleSignupLink) {
+        toggleSignupLink.addEventListener("click", handleToggleSignup);
+    }
+
     // Check login state
     if (localStorage.getItem("isLoggedIn") === "true") {
         loginView.style.display = "none";
@@ -170,12 +201,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const btnSubmit = document.getElementById("btn-login-submit");
         btnSubmit.disabled = true;
-        btnSubmit.textContent = "Signing In...";
+        btnSubmit.textContent = isSignUpMode ? "Signing Up..." : "Signing In...";
 
         try {
-            const res = await fetch("https://lonsqhuudhiffjitmcbh.supabase.co/auth/v1/token?grant_type=password", {
+            const endpoint = isSignUpMode ? "signup" : "token?grant_type=password";
+            const res = await fetch(`https://lonsqhuudhiffjitmcbh.supabase.co/auth/v1/${endpoint}`, {
                 method: "POST",
                 headers: {
                     "apikey": "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V",
@@ -194,20 +225,47 @@ document.addEventListener("DOMContentLoaded", () => {
                     formEl.classList.add("form-success");
                     setTimeout(() => {
                         formEl.classList.remove("form-success");
-                        localStorage.setItem("userEmail", usernameOrEmail);
-                        localStorage.setItem("isLoggedIn", "true");
-                        loginView.style.opacity = "0";
-                        setTimeout(() => {
-                            loginView.style.display = "none";
-                            loginView.style.opacity = "1";
-                            appView.style.display = "block";
-                            btnNavSignout.style.display = "inline-block";
-                        }, 500);
+                        
+                        if (isSignUpMode) {
+                            // If auto-logged in, navigate to dashboard
+                            if (responseData.access_token) {
+                                localStorage.setItem("userEmail", usernameOrEmail);
+                                localStorage.setItem("isLoggedIn", "true");
+                                loginView.style.opacity = "0";
+                                setTimeout(() => {
+                                    loginView.style.display = "none";
+                                    loginView.style.opacity = "1";
+                                    appView.style.display = "block";
+                                    btnNavSignout.style.display = "inline-block";
+                                }, 500);
+                            } else {
+                                // Toggle back to login mode and prompt the user to log in
+                                alert("Account registered successfully! Please sign in using your credentials.");
+                                isSignUpMode = false;
+                                loginTitle.textContent = "Welcome";
+                                loginSubtitle.textContent = "Please sign in to continue";
+                                btnSubmit.textContent = "Sign In";
+                                signupPromptEl.innerHTML = `Don't have an account? <a href="#" id="toggle-signup-link">Sign up</a>`;
+                                document.getElementById("toggle-signup-link").addEventListener("click", handleToggleSignup);
+                                passwordInput.value = "";
+                            }
+                        } else {
+                            // Sign in success
+                            localStorage.setItem("userEmail", usernameOrEmail);
+                            localStorage.setItem("isLoggedIn", "true");
+                            loginView.style.opacity = "0";
+                            setTimeout(() => {
+                                loginView.style.display = "none";
+                                loginView.style.opacity = "1";
+                                appView.style.display = "block";
+                                btnNavSignout.style.display = "inline-block";
+                            }, 500);
+                        }
                     }, 1000);
                 }
             } else {
                 const errorData = await res.json();
-                const msg = errorData.error_description || errorData.message || "Invalid credentials.";
+                const msg = errorData.error_description || errorData.message || "Authentication failed.";
                 emailFieldError.textContent = msg;
                 emailFieldError.style.display = "block";
                 document.getElementById("email-field").classList.add("invalid");
@@ -218,7 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("email-field").classList.add("invalid");
         } finally {
             btnSubmit.disabled = false;
-            btnSubmit.textContent = "Sign In";
+            btnSubmit.textContent = isSignUpMode ? "Sign Up" : "Sign In";
         }
     });
 
