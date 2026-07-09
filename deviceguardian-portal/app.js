@@ -237,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     loginView.style.opacity = "1";
                                     appView.style.display = "block";
                                     btnNavSignout.style.display = "inline-block";
+                                    fetchDevices();
                                 }, 500);
                             } else {
                                 // Toggle back to login mode and prompt the user to log in
@@ -259,6 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 loginView.style.opacity = "1";
                                 appView.style.display = "block";
                                 btnNavSignout.style.display = "inline-block";
+                                fetchDevices();
                             }, 500);
                         }
                     }, 1000);
