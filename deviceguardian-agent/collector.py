@@ -337,6 +337,7 @@ class SystemTelemetryCollector:
                     percent = 0.0
                     free = 0
                     total = 0
+                    used = 0
                 disk_usage = DiskDummy()
 
         # 4. Battery Metrics
@@ -366,7 +367,8 @@ class SystemTelemetryCollector:
             "storage": {
                 "disk_usage_percent": float(disk_usage.percent),
                 "free_space_bytes": int(disk_usage.free),
-                "total_space_bytes": int(disk_usage.total)
+                "total_space_bytes": int(disk_usage.total),
+                "used_space_bytes": int(getattr(disk_usage, "used", disk_usage.total - disk_usage.free))
             },
             "battery": {
                 "percentage": battery_pct,

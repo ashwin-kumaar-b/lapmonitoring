@@ -18,6 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const batteryHealth = document.getElementById("battery-health");
     const smartStatus = document.getElementById("smart-status");
 
+    const storageBar = document.getElementById("storage-bar");
+    const storageUsedText = document.getElementById("storage-used-text");
+    const storageFreeText = document.getElementById("storage-free-text");
+
     const BACKEND_URL = "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/telemetry";
     let devicesCache = {};
 
@@ -59,6 +63,14 @@ document.addEventListener("DOMContentLoaded", () => {
         
         smartStatus.className = "smart-status-badge healthy";
         smartStatus.innerHTML = '<span class="status-icon">✓</span><span class="status-text">HEALTHY (OK)</span>';
+
+        const storagePct = Math.floor(getRandomArbitrary(40, 55));
+        const totalStorageGb = 512.0;
+        const usedStorageGb = (totalStorageGb * (storagePct / 100)).toFixed(1);
+        const freeStorageGb = (totalStorageGb - usedStorageGb).toFixed(1);
+        storageBar.style.width = `${storagePct}%`;
+        storageUsedText.textContent = `${usedStorageGb} GB / ${totalStorageGb} GB (${storagePct}%)`;
+        storageFreeText.textContent = `Free: ${freeStorageGb} GB`;
     }
 
     /**
@@ -108,6 +120,21 @@ document.addEventListener("DOMContentLoaded", () => {
             smartStatus.className = "smart-status-badge alert";
             smartStatus.innerHTML = `⚠️ ${status}`;
         }
+
+        // SSD Storage update
+        const storage = payload.storage || {};
+        const diskPct = storage.disk_usage_percent || 0;
+        const freeBytes = storage.free_space_bytes || 0;
+        const totalBytes = storage.total_space_bytes || 0;
+        const usedBytes = storage.used_space_bytes !== undefined ? storage.used_space_bytes : (totalBytes - freeBytes);
+
+        const totalGb = totalBytes ? (totalBytes / (1024 ** 3)).toFixed(1) : "0.0";
+        const usedGb = usedBytes ? (usedBytes / (1024 ** 3)).toFixed(1) : "0.0";
+        const freeGb = freeBytes ? (freeBytes / (1024 ** 3)).toFixed(1) : "0.0";
+
+        storageBar.style.width = `${diskPct}%`;
+        storageUsedText.textContent = `${usedGb} GB / ${totalGb} GB (${diskPct.toFixed(1)}%)`;
+        storageFreeText.textContent = `Free: ${freeGb} GB`;
     }
 
     /**
