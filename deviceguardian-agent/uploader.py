@@ -24,6 +24,8 @@ class TelemetryUploader:
         
         if is_supabase:
             url = base_url if base_url.endswith("/telemetry") else f"{base_url}/telemetry"
+            if "?on_conflict=" not in url:
+                url = f"{url}?on_conflict=device_uuid"
             supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V"
             headers = {
                 "apikey": supabase_key,
@@ -84,6 +86,8 @@ class TelemetryUploader:
         
         if is_supabase:
             url = base_url if base_url.endswith("/telemetry") else f"{base_url}/telemetry"
+            if "?on_conflict=" not in url:
+                url = f"{url}?on_conflict=device_uuid"
             supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V"
             headers = {
                 "apikey": supabase_key,
