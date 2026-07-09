@@ -59,7 +59,13 @@
         <section id="dashboard" class="dashboard-section">
             <div class="section-header">
                 <h2>Real-Time Telemetry Dashboard</h2>
-                <p>Simulating live data received from the running agent service</p>
+                <p>Monitor your machines actively connected to the DeviceGuardian network</p>
+                <div class="device-select-wrapper">
+                    <label for="device-select" class="device-select-label">Active Laptop: </label>
+                    <select id="device-select" class="device-dropdown">
+                        <option value="simulation">📡 Demo Simulation (No Active Devices)</option>
+                    </select>
+                </div>
             </div>
             
             <div class="dashboard-grid">

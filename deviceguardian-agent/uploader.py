@@ -19,28 +19,45 @@ class TelemetryUploader:
             db_manager.enqueue_telemetry(payload)
             return False
 
-        url = f"{config_manager.backend_url.rstrip('/')}/telemetry"
-        token = auth_manager.get_token()
-
-        if not token:
-            logger.warning("No authentication token available. Caching telemetry locally.")
-            db_manager.enqueue_telemetry(payload)
-            return False
-
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
+        base_url = config_manager.backend_url.rstrip('/')
+        is_supabase = "supabase.co" in base_url
+        
+        if is_supabase:
+            url = base_url if base_url.endswith("/telemetry") else f"{base_url}/telemetry"
+            supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V"
+            headers = {
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates"
+            }
+            # Map telemetry dict into public.telemetry table schema
+            post_payload = {
+                "device_uuid": payload.get("system", {}).get("device_uuid", "unknown"),
+                "device_name": payload.get("system", {}).get("device_name", "Unknown"),
+                "payload": payload
+            }
+        else:
+            url = f"{base_url}/telemetry"
+            token = auth_manager.get_token()
+            if not token:
+                logger.warning("No authentication token available. Caching telemetry locally.")
+                db_manager.enqueue_telemetry(payload)
+                return False
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            post_payload = payload
 
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            response = requests.post(url, json=post_payload, headers=headers, timeout=10)
             
             if response.status_code in (200, 201):
-                logger.info("Telemetry uploaded successfully.")
-                # Since connection is verified, trigger background synchronization of queued records
+                logger.info("Telemetry uploaded successfully to backend.")
                 self.sync_offline_queue()
                 return True
-            elif response.status_code == 401:
+            elif response.status_code == 401 and not is_supabase:
                 logger.warning("Authentication failed (401 Unauthorized). Resetting credentials and queuing.")
                 auth_manager.clear_token()
                 db_manager.enqueue_telemetry(payload)
@@ -62,25 +79,46 @@ class TelemetryUploader:
             return
 
         logger.info(f"Synchronizing offline queue. Found {queue_size} pending records.")
-        token = auth_manager.get_token()
-        if not token:
-            logger.warning("Aborting queue synchronization: Token unavailable.")
-            return
-
-        url = f"{config_manager.backend_url.rstrip('/')}/telemetry"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
+        base_url = config_manager.backend_url.rstrip('/')
+        is_supabase = "supabase.co" in base_url
+        
+        if is_supabase:
+            url = base_url if base_url.endswith("/telemetry") else f"{base_url}/telemetry"
+            supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V"
+            headers = {
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates"
+            }
+        else:
+            url = f"{base_url}/telemetry"
+            token = auth_manager.get_token()
+            if not token:
+                logger.warning("Aborting queue synchronization: Token unavailable.")
+                return
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
 
         # Sync up to 100 entries at a time
         queued_records = db_manager.get_queued_telemetry(limit=100)
         for record_id, payload in queued_records:
             try:
-                response = requests.post(url, json=payload, headers=headers, timeout=10)
+                if is_supabase:
+                    post_payload = {
+                        "device_uuid": payload.get("system", {}).get("device_uuid", "unknown"),
+                        "device_name": payload.get("system", {}).get("device_name", "Unknown"),
+                        "payload": payload
+                    }
+                else:
+                    post_payload = payload
+
+                response = requests.post(url, json=post_payload, headers=headers, timeout=10)
                 if response.status_code in (200, 201):
                     db_manager.delete_telemetry(record_id)
-                elif response.status_code == 401:
+                elif response.status_code == 401 and not is_supabase:
                     logger.warning("Authentication invalidated during queue sync.")
                     auth_manager.clear_token()
                     break

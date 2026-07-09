@@ -3,11 +3,25 @@ from fastapi import FastAPI, Header, HTTPException, status
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
+from fastapi.middleware.cors import CORSMiddleware
+
 # Set up logging for backend
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("MockBackend")
 
 app = FastAPI(title="DeviceGuardian AI - Mock Backend", version="1.0.0")
+
+# Enable CORS for frontend API calls
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# In-memory store of latest device telemetry, keyed by UUID
+ACTIVE_DEVICES = {}
 
 # Valid token mock
 MOCK_TOKEN = "mock-jwt-token-12345"
@@ -26,6 +40,11 @@ def login(request: LoginRequest):
         "token_type": "bearer",
         "expires_in": 3600
     }
+
+@app.get("/devices")
+def get_devices():
+    """Returns telemetry data for all active devices."""
+    return list(ACTIVE_DEVICES.values())
 
 @app.post("/telemetry")
 def receive_telemetry(payload: Dict[str, Any], authorization: Optional[str] = Header(None)):
@@ -47,6 +66,12 @@ def receive_telemetry(payload: Dict[str, Any], authorization: Optional[str] = He
         )
 
     system_info = payload.get("system", {})
+    device_uuid = system_info.get("device_uuid", "Unknown")
+    
+    # Store/Update in-memory state
+    if device_uuid != "Unknown":
+        ACTIVE_DEVICES[device_uuid] = payload
+
     device_name = system_info.get("device_name", "Unknown")
     cpu_info = payload.get("cpu", {})
     ram_info = payload.get("memory", {})
@@ -80,5 +105,5 @@ def receive_telemetry(payload: Dict[str, Any], authorization: Optional[str] = He
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting mock backend server on http://localhost:8000")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    logger.info("Starting mock backend server on http://0.0.0.0:8000")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
