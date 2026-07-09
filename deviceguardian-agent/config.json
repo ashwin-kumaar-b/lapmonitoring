@@ -1,0 +1,6 @@
+{
+  "sampling_interval_seconds": 30,
+  "backend_url": "http://localhost:8000",
+  "auto_start": true,
+  "retry_interval_seconds": 10
+}

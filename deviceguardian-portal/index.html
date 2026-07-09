@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DeviceGuardian AI Portal - Download the lightweight Windows Monitoring Agent and review live system telemetry metrics securely.">
+    <title>DeviceGuardian AI - Download Portal</title>
+    <!-- Import Outfit & Inter fonts from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Navigation Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <span class="logo-shield">🛡️</span>
+                <span class="logo-text">DeviceGuardian <span class="accent-text">AI</span></span>
+            </div>
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#dashboard">Dashboard Preview</a>
+                <a href="#download" class="nav-btn">Download Installer</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <span class="badge">Windows Monitoring Agent</span>
+                <h1 class="hero-title">Continuous Device Telemetry. <br><span class="gradient-text">Secured by Intelligence.</span></h1>
+                <p class="hero-subtitle">
+                    A lightweight background service that collects deep hardware diagnostics, supports offline SQLite caching, and securely syncs telemetry to FastAPI.
+                </p>
+                <div class="hero-actions">
+                    <a href="#download" class="btn-primary" id="btn-hero-download">
+                        <span>Get Windows Installer</span>
+                        <span class="btn-arrow">→</span>
+                    </a>
+                    <a href="#dashboard" class="btn-secondary">Explore Live Demo</a>
+                </div>
+            </div>
+            <div class="hero-graphic">
+                <div class="shield-container">
+                    <div class="glow-ring"></div>
+                    <div class="glow-ring-inner"></div>
+                    <div class="core-shield">DG</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Telemetry Dashboard Section -->
+        <section id="dashboard" class="dashboard-section">
+            <div class="section-header">
+                <h2>Real-Time Telemetry Dashboard</h2>
+                <p>Simulating live data received from the running agent service</p>
+            </div>
+            
+            <div class="dashboard-grid">
+                <!-- CPU Dial -->
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h3>CPU Diagnostics</h3>
+                        <span class="status-indicator live">LIVE</span>
+                    </div>
+                    <div class="dial-container">
+                        <div class="progress-dial" id="cpu-dial" style="--percent: 34;">
+                            <div class="dial-inner">
+                                <span class="dial-value" id="cpu-val">34%</span>
+                                <span class="dial-label">Usage</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="metric-row">
+                            <span>Frequency</span>
+                            <strong id="cpu-freq">2.2 GHz</strong>
+                        </div>
+                        <div class="metric-row">
+                            <span>Temperature</span>
+                            <strong id="cpu-temp">20.1°C</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Dial -->
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h3>Memory Status</h3>
+                        <span class="status-indicator live">LIVE</span>
+                    </div>
+                    <div class="dial-container">
+                        <div class="progress-dial" id="ram-dial" style="--percent: 79;">
+                            <div class="dial-inner">
+                                <span class="dial-value" id="ram-val">79%</span>
+                                <span class="dial-label">Utilized</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="metric-row">
+                            <span>Total RAM</span>
+                            <strong>16 GB</strong>
+                        </div>
+                        <div class="metric-row">
+                            <span>Free RAM</span>
+                            <strong id="ram-free">3.3 GB</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health & Battery -->
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h3>System Power & Storage</h3>
+                        <span class="status-indicator live">LIVE</span>
+                    </div>
+                    <div class="power-container">
+                        <!-- Battery -->
+                        <div class="metric-block">
+                            <span class="block-label">Battery Level</span>
+                            <div class="bar-container">
+                                <div class="bar-fill" id="battery-bar" style="width: 97%;"></div>
+                            </div>
+                            <div class="block-sub">
+                                <span id="battery-level-text">97% (Charging)</span>
+                                <span id="battery-health">Health: 90%</span>
+                            </div>
+                        </div>
+
+                        <!-- Disk SMART -->
+                        <div class="metric-block">
+                            <span class="block-label">SSD Health Prediction (SMART)</span>
+                            <div class="smart-status-badge healthy" id="smart-status">
+                                <span class="status-icon">✓</span>
+                                <span class="status-text">HEALTHY (OK)</span>
+                            </div>
+                            <div class="block-sub">
+                                <span>Errors Detected: 0</span>
+                                <span>No warnings reported</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Grid Section -->
+        <section id="features" class="features-section">
+            <div class="section-header">
+                <h2>Engineered for Security and Reliability</h2>
+                <p>Features that make DeviceGuardian AI suitable for enterprise telemetry monitoring</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="card feature-card">
+                    <div class="feature-icon">📁</div>
+                    <h3>Offline Resiliency</h3>
+                    <p>If network connection drops, telemetry logs are immediately cached to a local SQLite queue and synced automatically once connection returns.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Silent Execution</h3>
+                    <p>Runs as a lightweight service in the background. The system tray allows pausing, manual syncs, and status reports in one-click.</p>
+                </div>
+                <div class="card feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Secure JWT Auth</h3>
+                    <p>Supports robust token-based credentials authentication with custom encryption headers on every upload endpoint.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section id="download" class="download-section">
+            <div class="download-container card">
+                <h2>Get Started with DeviceGuardian AI</h2>
+                <p>Deploy the monitoring service on your Windows device in less than a minute.</p>
+                
+                <div class="download-box">
+                    <div class="install-info">
+                        <h3>DeviceGuardian AI Standalone Agent</h3>
+                        <p>Standalone silent background agent executable (pre-compiled and ready to run).</p>
+                        <span class="meta-info">File: DeviceGuardianAgent.exe | Size: ~59 MB | OS: Windows 10 / 11 (64-bit)</span>
+                    </div>
+                    
+                    <a href="https://github.com/ashwin-kumaar-b/lapmonitoring/raw/master/deviceguardian-agent/dist/DeviceGuardianAgent.exe" class="btn-download" id="btn-download-installer">
+                        📥 Download Standalone Agent (.exe)
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <p>&copy; 2026 DeviceGuardian AI project. Built for Hackathon.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

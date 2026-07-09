@@ -1,0 +1,278 @@
+import os
+import sys
+import platform
+import datetime
+import wmi
+import psutil
+import win32api
+import winreg
+from typing import Dict, Any, Optional, Tuple
+from logger import logger
+
+# Initialize pythoncom for WMI in multithreaded environment if needed (done inside collector calls)
+# to prevent CoInitialize issues when called from different threads.
+import pythoncom
+
+class SystemTelemetryCollector:
+    """Collects hardware and OS telemetry from a Windows system."""
+
+    def __init__(self) -> None:
+        self.device_name = platform.node()
+        self.username = self._get_username()
+        self.windows_version = self._get_windows_version()
+        self.device_uuid = self._get_device_uuid()
+
+    def _get_username(self) -> str:
+        """Retrieves the current logged-in username safely."""
+        try:
+            return win32api.GetUserName()
+        except Exception:
+            try:
+                return os.getlogin()
+            except Exception:
+                return os.environ.get("USERNAME", "Unknown")
+
+    def _get_windows_version(self) -> str:
+        """Constructs a comprehensive Windows version string."""
+        try:
+            return f"{platform.system()} {platform.release()} (Build {platform.version()})"
+        except Exception:
+            return "Windows Unknown"
+
+    def _get_device_uuid(self) -> str:
+        """Retrieves machine UUID from Registry or WMI as a fallback."""
+        # Method 1: Registry (MachineGuid)
+        try:
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography")
+            uuid_val, _ = winreg.QueryValueEx(key, "MachineGuid")
+            winreg.CloseKey(key)
+            if uuid_val:
+                return str(uuid_val).strip()
+        except Exception as e:
+            logger.debug(f"Failed to read MachineGuid from registry: {e}")
+
+        # Method 2: WMI BIOS Serial Number or UUID
+        pythoncom.CoInitialize()
+        try:
+            c = wmi.WMI()
+            for system in c.Win32_ComputerSystemProduct():
+                if system.UUID:
+                    return str(system.UUID).strip()
+        except Exception as e:
+            logger.debug(f"Failed to get UUID from WMI Win32_ComputerSystemProduct: {e}")
+        finally:
+            pythoncom.CoUninitialize()
+
+        # Method 3: Fallback MAC Address / ID
+        try:
+            import uuid
+            return str(uuid.UUID(int=uuid.getnode()))
+        except Exception:
+            return "00000000-0000-0000-0000-000000000000"
+
+    def get_cpu_temp(self) -> Optional[float]:
+        """Queries WMI for CPU temperature with fallback to performance counters."""
+        pythoncom.CoInitialize()
+        try:
+            # Method 1: Query MSAcpi_ThermalZoneTemperature (requires Admin)
+            c = wmi.WMI(namespace="root/wmi")
+            zones = c.MSAcpi_ThermalZoneTemperature()
+            if zones:
+                max_temp = max(zone.CurrentTemperature for zone in zones)
+                temp_c = (max_temp - 2732) / 10.0
+                if 0 <= temp_c <= 120:
+                    return temp_c
+        except Exception:
+            pass
+
+        try:
+            # Method 2: Fallback to ThermalZoneInformation performance counters (does NOT require Admin)
+            c = wmi.WMI()
+            zones = c.Win32_PerfFormattedData_Counters_ThermalZoneInformation()
+            if zones:
+                # Find maximum temperature among zones
+                max_raw = max(zone.HighPrecisionTemperature for zone in zones if zone.HighPrecisionTemperature)
+                # HighPrecisionTemperature is in tenths of Kelvin
+                temp_c = (max_raw / 10.0) - 273.15
+                if 0 <= temp_c <= 120:
+                    return temp_c
+        except Exception:
+            pass
+        finally:
+            pythoncom.CoUninitialize()
+        return None
+
+    def get_battery_health(self) -> Tuple[Optional[str], Optional[float]]:
+        """Queries WMI for battery health and capacity. Returns (health, capacity_wh)."""
+        pythoncom.CoInitialize()
+        health: Optional[str] = None
+        capacity_wh: Optional[float] = None
+        try:
+            c = wmi.WMI(namespace="root/wmi")
+            # Try to get BatteryFullChargedCapacity
+            full_capacities = c.BatteryFullChargedCapacity()
+            if full_capacities:
+                # Capacity is in mWh, convert to Wh
+                capacity_wh = float(full_capacities[0].FullChargedCapacity) / 1000.0
+
+            # Battery Static Data
+            static_data = c.BatteryStaticData()
+            if static_data and capacity_wh is not None:
+                design_cap = float(static_data[0].DesignedCapacity) / 1000.0
+                if design_cap > 0:
+                    health_pct = (capacity_wh / design_cap) * 100.0
+                    health = f"{min(health_pct, 100.0):.1f}%"
+        except Exception:
+            pass
+        finally:
+            pythoncom.CoUninitialize()
+        return health, capacity_wh
+
+    def get_smart_health(self) -> Tuple[str, int]:
+        """Queries WMI for disk SMART status with fallback to CIMV2 DiskDrive."""
+        pythoncom.CoInitialize()
+        status = "OK"
+        errors = 0
+        try:
+            # Method 1: Try root/wmi (MSStorageDriver_FailurePredictStatus - requires Admin)
+            c = wmi.WMI(namespace="root/wmi")
+            predictors = c.MSStorageDriver_FailurePredictStatus()
+            if predictors:
+                for disk in predictors:
+                    if disk.PredictFailure:
+                        status = "FAILED"
+                        errors += 1
+                return status, errors
+        except Exception:
+            pass
+
+        try:
+            # Method 2: Try root/cimv2 (Win32_DiskDrive - does NOT require Admin)
+            c = wmi.WMI()
+            for disk in c.Win32_DiskDrive():
+                disk_status = str(disk.Status).upper().strip()
+                if disk_status not in ("OK", "OK "):
+                    status = "FAILED" if "FAIL" in disk_status or "PRED" in disk_status else "WARNING"
+                    errors += 1
+        except Exception:
+            status = "UNKNOWN"
+        finally:
+            pythoncom.CoUninitialize()
+        return status, errors
+
+    def get_fan_speed(self) -> Optional[float]:
+        """Queries WMI for fan speed using Lenovo custom methods, hardware monitors, or standard WMI."""
+        pythoncom.CoInitialize()
+        try:
+            # Method 1: Try Lenovo WMI custom method (requires Admin on Lenovo systems)
+            c = wmi.WMI(namespace="root/wmi")
+            lenovo_fans = c.LENOVO_FAN_METHOD()
+            if lenovo_fans:
+                # Call WMI method Fan_GetCurrentFanSpeed (usually 0 is CPU fan)
+                speed = lenovo_fans[0].Fan_GetCurrentFanSpeed(0)
+                if speed is not None and speed > 0:
+                    return float(speed)
+        except Exception:
+            pass
+
+        try:
+            # Method 2: Query LibreHardwareMonitor/OpenHardwareMonitor if running
+            for ns in ("root/LibreHardwareMonitor", "root/OpenHardwareMonitor"):
+                try:
+                    c = wmi.WMI(namespace=ns)
+                    fans = c.Sensor(SensorType="Fan")
+                    if fans:
+                        return float(fans[0].Value)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        try:
+            # Method 3: Query standard Win32_Fan (CIMV2)
+            c = wmi.WMI()
+            fans = c.Win32_Fan()
+            for fan in fans:
+                if fan.DesiredSpeed is not None:
+                    return float(fan.DesiredSpeed)
+        except Exception:
+            pass
+        finally:
+            pythoncom.CoUninitialize()
+        return None
+
+    def collect_telemetry(self) -> Dict[str, Any]:
+        """Assembles all system telemetry into a single payload."""
+        # 1. CPU Metrics
+        cpu_usage = psutil.cpu_percent(interval=1)
+        cpu_freq_info = psutil.cpu_freq()
+        cpu_freq = cpu_freq_info.current if cpu_freq_info else 0.0
+        cpu_temp = self.get_cpu_temp()
+        fan_speed = self.get_fan_speed()
+
+        # 2. Memory Metrics
+        vm = psutil.virtual_memory()
+        
+        # 3. Disk Storage Metrics
+        try:
+            disk_usage = psutil.disk_usage("C:\\")
+        except Exception:
+            try:
+                disk_usage = psutil.disk_usage("/")
+            except Exception:
+                # Dummy object
+                class DiskDummy:
+                    percent = 0.0
+                    free = 0
+                    total = 0
+                disk_usage = DiskDummy()
+
+        # 4. Battery Metrics
+        battery_info = psutil.sensors_battery()
+        battery_pct = battery_info.percent if battery_info else None
+        charging = battery_info.power_plugged if battery_info else None
+        bat_health, bat_cap = self.get_battery_health()
+
+        # 5. Disk Health Metrics
+        smart_status, disk_errors = self.get_smart_health()
+
+        # Compile payload
+        payload = {
+            "cpu": {
+                "usage_percent": float(cpu_usage),
+                "frequency_mhz": float(cpu_freq),
+                "temperature_c": cpu_temp,
+                "fan_speed_rpm": fan_speed
+            },
+            "memory": {
+                "total_ram": int(vm.total),
+                "used_ram": int(vm.used),
+                "ram_usage_percent": float(vm.percent)
+            },
+            "storage": {
+                "disk_usage_percent": float(disk_usage.percent),
+                "free_space_bytes": int(disk_usage.free),
+                "total_space_bytes": int(disk_usage.total)
+            },
+            "battery": {
+                "percentage": battery_pct,
+                "charging": charging,
+                "health": bat_health,
+                "capacity_wh": bat_cap
+            },
+            "disk_health": {
+                "smart_status": smart_status,
+                "errors": disk_errors
+            },
+            "system": {
+                "device_name": self.device_name,
+                "username": self.username,
+                "windows_version": self.windows_version,
+                "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+                "device_uuid": self.device_uuid
+            }
+        }
+        return payload
+
+# Global collector instance
+collector = SystemTelemetryCollector()
