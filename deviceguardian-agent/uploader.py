@@ -34,7 +34,8 @@ class TelemetryUploader:
             post_payload = {
                 "device_uuid": payload.get("system", {}).get("device_uuid", "unknown"),
                 "device_name": payload.get("system", {}).get("device_name", "Unknown"),
-                "payload": payload
+                "payload": payload,
+                "updated_at": payload.get("system", {}).get("timestamp")
             }
         else:
             url = f"{base_url}/telemetry"
@@ -108,7 +109,8 @@ class TelemetryUploader:
                     post_payload = {
                         "device_uuid": payload.get("system", {}).get("device_uuid", "unknown"),
                         "device_name": payload.get("system", {}).get("device_name", "Unknown"),
-                        "payload": payload
+                        "payload": payload,
+                        "updated_at": payload.get("system", {}).get("timestamp")
                     }
                 else:
                     post_payload = payload
