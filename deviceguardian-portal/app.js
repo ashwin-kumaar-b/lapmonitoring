@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const ramDial = document.getElementById("ram-dial");
     const ramVal = document.getElementById("ram-val");
+    const ramTotal = document.getElementById("ram-total");
     const ramFree = document.getElementById("ram-free");
 
     const batteryBar = document.getElementById("battery-bar");
@@ -41,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         ramDial.style.setProperty("--percent", ramUsage);
         ramVal.textContent = `${ramUsage}%`;
+        ramTotal.textContent = `${totalRam.toFixed(0)} GB`;
         ramFree.textContent = `${freeRam} GB`;
 
         const batteryPct = Math.floor(getRandomArbitrary(95, 98));
@@ -72,8 +74,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const ramUsage = ram.ram_usage_percent || 0;
         ramDial.style.setProperty("--percent", ramUsage);
         ramVal.textContent = `${ramUsage}%`;
-        const totalRamGb = ram.total_ram_bytes ? (ram.total_ram_bytes / (1024 ** 3)).toFixed(1) : "16.0";
-        const freeRamGb = ram.free_ram_bytes ? (ram.free_ram_bytes / (1024 ** 3)).toFixed(1) : "0.0";
+        const totalRam = ram.total_ram || 0;
+        const usedRam = ram.used_ram || 0;
+        const freeRam = totalRam - usedRam;
+        const totalRamGb = totalRam ? (totalRam / (1024 ** 3)).toFixed(1) : "16.0";
+        const freeRamGb = freeRam ? (freeRam / (1024 ** 3)).toFixed(1) : "0.0";
+        ramTotal.textContent = `${Math.round(totalRamGb)} GB`;
         ramFree.textContent = `${freeRamGb} GB`;
 
         // Battery update
@@ -102,8 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V";
             const res = await fetch(BACKEND_URL, {
                 headers: {
-                    "apikey": supabase_key,
-                    "Authorization": `Bearer ${supabase_key}`
+                    "apikey": supabase_key
                 }
             });
             if (!res.ok) throw new Error("Backend error");

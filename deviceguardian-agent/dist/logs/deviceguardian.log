@@ -30,3 +30,28 @@
 2026-07-09 15:21:40 - INFO - [TelemetryCollectorThread] - Starting telemetry extraction...
 2026-07-09 15:21:42 - INFO - [TelemetryCollectorThread] - Telemetry collected. Handing off to uploader.
 2026-07-09 15:21:44 - INFO - [TelemetryCollectorThread] - Telemetry uploaded successfully.
+2026-07-09 17:04:36 - INFO - [MainThread] - Local SQLite database initialized.
+2026-07-09 17:04:37 - INFO - [MainThread] - DeviceGuardian AI Monitoring Agent starting up...
+2026-07-09 17:04:37 - INFO - [MainThread] - Auto-start enabled in registry: "C:\Users\ashwi\Documents\antigravity\modest-turing\deviceguardian-agent\dist\DeviceGuardianAgent.exe"
+2026-07-09 17:04:37 - INFO - [TelemetryCollectorThread] - Telemetry collection thread started.
+2026-07-09 17:04:37 - INFO - [MainThread] - Starting System Tray main loop.
+2026-07-09 17:04:39 - INFO - [TelemetryCollectorThread] - Starting telemetry extraction...
+2026-07-09 17:04:40 - INFO - [TelemetryCollectorThread] - Telemetry collected. Handing off to uploader.
+2026-07-09 17:04:43 - ERROR - [TelemetryCollectorThread] - Failed to upload. HTTP Status: 401. Queuing locally.
+2026-07-09 17:04:43 - INFO - [TelemetryCollectorThread] - Telemetry enqueued locally due to transmission failure.
+2026-07-09 17:05:13 - INFO - [TelemetryCollectorThread] - Starting telemetry extraction...
+2026-07-09 17:05:14 - INFO - [TelemetryCollectorThread] - Telemetry collected. Handing off to uploader.
+2026-07-09 17:05:16 - ERROR - [TelemetryCollectorThread] - Failed to upload. HTTP Status: 401. Queuing locally.
+2026-07-09 17:05:16 - INFO - [TelemetryCollectorThread] - Telemetry enqueued locally due to transmission failure.
+2026-07-09 17:05:46 - INFO - [TelemetryCollectorThread] - Starting telemetry extraction...
+2026-07-09 17:05:47 - INFO - [TelemetryCollectorThread] - Telemetry collected. Handing off to uploader.
+2026-07-09 17:05:48 - ERROR - [TelemetryCollectorThread] - Failed to upload. HTTP Status: 401. Queuing locally.
+2026-07-09 17:05:48 - INFO - [TelemetryCollectorThread] - Telemetry enqueued locally due to transmission failure.
+2026-07-09 17:06:18 - INFO - [TelemetryCollectorThread] - Starting telemetry extraction...
+2026-07-09 17:06:19 - INFO - [TelemetryCollectorThread] - Telemetry collected. Handing off to uploader.
+2026-07-09 17:06:20 - ERROR - [TelemetryCollectorThread] - Failed to upload. HTTP Status: 401. Queuing locally.
+2026-07-09 17:06:20 - INFO - [TelemetryCollectorThread] - Telemetry enqueued locally due to transmission failure.
+2026-07-09 17:06:50 - INFO - [TelemetryCollectorThread] - Starting telemetry extraction...
+2026-07-09 17:06:52 - INFO - [TelemetryCollectorThread] - Telemetry collected. Handing off to uploader.
+2026-07-09 17:06:52 - ERROR - [TelemetryCollectorThread] - Failed to upload. HTTP Status: 401. Queuing locally.
+2026-07-09 17:06:52 - INFO - [TelemetryCollectorThread] - Telemetry enqueued locally due to transmission failure.

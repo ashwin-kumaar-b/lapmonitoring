@@ -27,7 +27,6 @@ class TelemetryUploader:
             supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V"
             headers = {
                 "apikey": supabase_key,
-                "Authorization": f"Bearer {supabase_key}",
                 "Content-Type": "application/json",
                 "Prefer": "resolution=merge-duplicates"
             }
@@ -87,7 +86,6 @@ class TelemetryUploader:
             supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V"
             headers = {
                 "apikey": supabase_key,
-                "Authorization": f"Bearer {supabase_key}",
                 "Content-Type": "application/json",
                 "Prefer": "resolution=merge-duplicates"
             }
