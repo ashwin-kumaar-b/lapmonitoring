@@ -188,11 +188,13 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (res.ok) {
+                const responseData = await res.json();
                 const formEl = document.querySelector(".login-form");
                 if (formEl) {
                     formEl.classList.add("form-success");
                     setTimeout(() => {
                         formEl.classList.remove("form-success");
+                        localStorage.setItem("userEmail", usernameOrEmail);
                         localStorage.setItem("isLoggedIn", "true");
                         loginView.style.opacity = "0";
                         setTimeout(() => {
@@ -359,6 +361,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /**
+     * Maps user email/username to specific devices.
+     */
+    function getFilteredDevices(data, email) {
+        if (!email) return data;
+        const emailLower = email.toLowerCase();
+
+        // Admin sees all devices
+        if (emailLower.includes("admin")) {
+            return data;
+        }
+
+        return data.filter(row => {
+            const devName = (row.device_name || "").toLowerCase();
+            const winUser = (row.payload?.system?.username || "").toLowerCase();
+
+            // Ashwin's devices
+            if (emailLower.includes("ashwin") || emailLower.includes("ashwi")) {
+                return devName.includes("ashwin") || winUser.includes("ashwi");
+            }
+
+            // Friend's devices (Bharat)
+            if (emailLower.includes("bharat")) {
+                return devName.includes("u99pqts5") || winUser.includes("bharat");
+            }
+
+            // Generic mapping: match email username prefix to device or windows username
+            const prefix = emailLower.split("@")[0];
+            return devName.includes(prefix) || winUser.includes(prefix);
+        });
+    }
+
+    /**
      * Fetches connected devices from the FastAPI backend.
      */
     async function fetchDevices() {
@@ -372,8 +406,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!res.ok) throw new Error("Backend error");
             const data = await res.json();
             
+            // Filter list of devices based on logged-in email
+            const loggedInEmail = localStorage.getItem("userEmail") || "";
+            const filteredData = getFilteredDevices(data, loggedInEmail);
+            
             // Check if active devices list is empty
-            if (!data || data.length === 0) {
+            if (!filteredData || filteredData.length === 0) {
                 if (deviceSelect.value !== "simulation") {
                     deviceSelect.value = "simulation";
                 }
@@ -392,7 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
             deviceSelect.appendChild(defaultOpt);
 
             devicesCache = {};
-            data.forEach(row => {
+            filteredData.forEach(row => {
                 const uuid = row.device_uuid;
                 const name = row.device_name;
                 devicesCache[uuid] = row.payload;
@@ -406,8 +444,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Restore selection or select the first real laptop automatically if it was on simulation
             if (currentSelected && devicesCache[currentSelected]) {
                 deviceSelect.value = currentSelected;
-            } else if (data.length > 0) {
-                deviceSelect.value = data[0].device_uuid;
+            } else if (filteredData.length > 0) {
+                deviceSelect.value = filteredData[0].device_uuid;
             }
 
             // Render selected device details
