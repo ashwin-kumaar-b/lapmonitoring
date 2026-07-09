@@ -10,23 +10,94 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons for vanilla HTML/JS -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
-    <!-- Navigation Header -->
-    <header class="app-header">
-        <div class="header-container">
-            <div class="logo-area">
-                <span class="logo-shield">🛡️</span>
-                <span class="logo-text">DeviceGuardian <span class="accent-text">AI</span></span>
-            </div>
-            <nav class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#dashboard">Dashboard Preview</a>
-                <a href="#download" class="nav-btn">Download Installer</a>
-            </nav>
+    <!-- Login View Container -->
+    <div id="login-view" class="login-view-container">
+        <canvas id="particles" class="particles-canvas"></canvas>
+
+        <div class="theme-toggle" id="theme-toggle-btn">
+            <i data-lucide="moon"></i>
         </div>
-    </header>
+
+        <div class="login-card">
+            <div class="login-card-inner">
+                <div class="login-header">
+                    <h1>Welcome</h1>
+                    <p>Please sign in to continue</p>
+                </div>
+
+                <form class="login-form" id="login-form-el">
+                    <div class="form-field" id="email-field">
+                        <input type="text" id="email" required autocomplete="off" />
+                        <label for="email">Username or Email Address</label>
+                        <span class="error-message" id="email-error" style="display: none;">Please enter a valid username/email</span>
+                    </div>
+
+                    <div class="form-field" id="password-field">
+                        <input type="password" id="password" required />
+                        <label for="password">Password</label>
+                        <button type="button" class="toggle-password" id="btn-toggle-password" aria-label="Toggle password">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="remember-me">
+                            <input type="checkbox" id="remember-me-checkbox" />
+                            <span class="checkmark"></span>
+                            Remember me
+                        </label>
+
+                        <a href="#" class="forgot-password">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="login-button" id="btn-login-submit">Sign In</button>
+                </form>
+
+                <div class="separator">
+                    <span>or continue with</span>
+                </div>
+
+                <div class="social-login">
+                    <button class="social-button github" type="button">
+                        <i data-lucide="github"></i>
+                    </button>
+                    <button class="social-button twitter" type="button">
+                        <i data-lucide="twitter"></i>
+                    </button>
+                    <button class="social-button linkedin" type="button">
+                        <i data-lucide="linkedin"></i>
+                    </button>
+                </div>
+
+                <p class="signup-prompt">
+                    Don't have an account? <a href="#">Sign up</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container (Hidden when not logged in) -->
+    <div id="app-view" style="display: none;">
+        <!-- Navigation Header -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="logo-area">
+                    <span class="logo-shield">🛡️</span>
+                    <span class="logo-text">DeviceGuardian <span class="accent-text">AI</span></span>
+                </div>
+                <nav class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#dashboard">Dashboard Preview</a>
+                    <a href="#download" class="nav-btn">Download Installer</a>
+                    <a href="#" id="btn-nav-signout" class="nav-btn" style="background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.25); color: #F87171 !important; display: none;">Sign Out</a>
+                </nav>
+            </div>
+        </header>
 
     <!-- Main Container -->
     <main>
@@ -228,6 +299,8 @@
     <footer class="app-footer">
         <p>&copy; 2026 DeviceGuardian AI project. Built for Hackathon.</p>
     </footer>
+
+    </div> <!-- Close app-view -->
 
     <script src="app.js?v=1.0.2"></script>
 </body>

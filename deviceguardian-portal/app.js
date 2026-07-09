@@ -1,4 +1,225 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // Initialize Lucide Icons
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+
+    // Login page elements
+    const loginView = document.getElementById("login-view");
+    const appView = document.getElementById("app-view");
+    const loginForm = document.getElementById("login-form-el");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const btnTogglePassword = document.getElementById("btn-toggle-password");
+    const rememberMeCheckbox = document.getElementById("remember-me-checkbox");
+    const themeToggleBtn = document.getElementById("theme-toggle-btn");
+    const emailFieldError = document.getElementById("email-error");
+    const btnNavSignout = document.getElementById("btn-nav-signout");
+
+    // Check login state
+    if (localStorage.getItem("isLoggedIn") === "true") {
+        loginView.style.display = "none";
+        appView.style.display = "block";
+        btnNavSignout.style.display = "inline-block";
+    } else {
+        loginView.style.display = "flex";
+        appView.style.display = "none";
+        btnNavSignout.style.display = "none";
+    }
+
+    // Helper to toggle active class on focus for form fields
+    const formFields = document.querySelectorAll(".form-field");
+    formFields.forEach(field => {
+        const input = field.querySelector("input");
+        if (!input) return;
+
+        input.addEventListener("focus", () => {
+            field.classList.add("active");
+        });
+
+        input.addEventListener("blur", () => {
+            if (!input.value) {
+                field.classList.remove("active");
+            }
+        });
+
+        if (input.value) {
+            field.classList.add("active");
+        }
+    });
+
+    // Toggle password visibility
+    btnTogglePassword.addEventListener("click", () => {
+        const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+        passwordInput.setAttribute("type", type);
+        const icon = btnTogglePassword.querySelector("i");
+        if (icon) {
+            icon.setAttribute("data-lucide", type === "text" ? "eye-off" : "eye");
+            if (window.lucide) window.lucide.createIcons();
+        }
+    });
+
+    // Toggle login view theme
+    themeToggleBtn.addEventListener("click", () => {
+        loginView.classList.toggle("light");
+        const icon = themeToggleBtn.querySelector("i");
+        if (icon) {
+            icon.setAttribute("data-lucide", loginView.classList.contains("light") ? "sun" : "moon");
+            if (window.lucide) window.lucide.createIcons();
+        }
+        if (window.updateParticleColors) {
+            window.updateParticleColors();
+        }
+    });
+
+    // Sign Out Handler
+    btnNavSignout.addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("isLoggedIn");
+        appView.style.display = "none";
+        loginView.style.display = "flex";
+        btnNavSignout.style.display = "none";
+        emailInput.value = "";
+        passwordInput.value = "";
+        formFields.forEach(field => field.classList.remove("active"));
+    });
+
+    // Canvas Particles Background
+    const canvas = document.getElementById("particles");
+    if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+            const setCanvasSize = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            };
+            setCanvasSize();
+            window.addEventListener("resize", setCanvasSize);
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 3 + 1;
+                    this.speedX = (Math.random() - 0.5) * 0.5;
+                    this.speedY = (Math.random() - 0.5) * 0.5;
+                    this.updateColor();
+                }
+
+                updateColor() {
+                    const isLight = loginView.classList.contains("light");
+                    this.color = isLight
+                        ? `rgba(0, 0, 100, ${Math.random() * 0.2})`
+                        : `rgba(255, 255, 255, ${Math.random() * 0.2})`;
+                }
+
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    if (this.x > canvas.width) this.x = 0;
+                    if (this.x < 0) this.x = canvas.width;
+                    if (this.y > canvas.height) this.y = 0;
+                    if (this.y < 0) this.y = canvas.height;
+                }
+
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const particles = [];
+            const particleCount = Math.min(100, Math.floor((canvas.width * canvas.height) / 15000));
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+
+            window.updateParticleColors = () => {
+                particles.forEach(p => p.updateColor());
+            };
+
+            const animate = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                requestAnimationFrame(animate);
+            };
+            animate();
+        }
+    }
+
+    // Supabase Sign In Handler
+    loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        emailFieldError.style.display = "none";
+        document.getElementById("email-field").classList.remove("invalid");
+
+        const usernameOrEmail = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        // Validation (Supabase Auth requires standard email format)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(usernameOrEmail)) {
+            emailFieldError.textContent = "Please enter a valid email address.";
+            emailFieldError.style.display = "block";
+            document.getElementById("email-field").classList.add("invalid");
+            return;
+        }
+
+        const btnSubmit = document.getElementById("btn-login-submit");
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = "Signing In...";
+
+        try {
+            const res = await fetch("https://lonsqhuudhiffjitmcbh.supabase.co/auth/v1/token?grant_type=password", {
+                method: "POST",
+                headers: {
+                    "apikey": "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: usernameOrEmail,
+                    password: password
+                })
+            });
+
+            if (res.ok) {
+                const formEl = document.querySelector(".login-form");
+                if (formEl) {
+                    formEl.classList.add("form-success");
+                    setTimeout(() => {
+                        formEl.classList.remove("form-success");
+                        localStorage.setItem("isLoggedIn", "true");
+                        loginView.style.opacity = "0";
+                        setTimeout(() => {
+                            loginView.style.display = "none";
+                            loginView.style.opacity = "1";
+                            appView.style.display = "block";
+                            btnNavSignout.style.display = "inline-block";
+                        }, 500);
+                    }, 1000);
+                }
+            } else {
+                const errorData = await res.json();
+                const msg = errorData.error_description || errorData.message || "Invalid credentials.";
+                emailFieldError.textContent = msg;
+                emailFieldError.style.display = "block";
+                document.getElementById("email-field").classList.add("invalid");
+            }
+        } catch (err) {
+            emailFieldError.textContent = "Network error. Please try again.";
+            emailFieldError.style.display = "block";
+            document.getElementById("email-field").classList.add("invalid");
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = "Sign In";
+        }
+    });
+
     // Select HTML elements representing dial values and styles
     const deviceSelect = document.getElementById("device-select");
     const cpuDial = document.getElementById("cpu-dial");
