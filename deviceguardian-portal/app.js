@@ -361,35 +361,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /**
-     * Maps user email/username to specific devices.
+     * Fetches user device mapping UUIDs from Supabase device_mappings table.
      */
-    function getFilteredDevices(data, email) {
-        if (!email) return data;
+    async function fetchUserDeviceMappings(email) {
+        if (!email) return [];
         const emailLower = email.toLowerCase();
 
         // Admin sees all devices
         if (emailLower.includes("admin")) {
-            return data;
+            return null;
         }
 
-        return data.filter(row => {
-            const devName = (row.device_name || "").toLowerCase();
-            const winUser = (row.payload?.system?.username || "").toLowerCase();
-
-            // Ashwin's devices
-            if (emailLower.includes("ashwin") || emailLower.includes("ashwi")) {
-                return devName.includes("ashwin") || winUser.includes("ashwi");
-            }
-
-            // Friend's devices (Bharat)
-            if (emailLower.includes("bharat")) {
-                return devName.includes("u99pqts5") || winUser.includes("bharat");
-            }
-
-            // Generic mapping: match email username prefix to device or windows username
-            const prefix = emailLower.split("@")[0];
-            return devName.includes(prefix) || winUser.includes(prefix);
-        });
+        try {
+            const supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V";
+            const res = await fetch(`https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings?username=eq.${encodeURIComponent(emailLower)}`, {
+                headers: {
+                    "apikey": supabase_key
+                }
+            });
+            if (!res.ok) return [];
+            const mappings = await res.json();
+            return mappings.map(m => m.device_uuid);
+        } catch (err) {
+            console.error("Error fetching device mappings:", err);
+            return [];
+        }
     }
 
     /**
@@ -406,9 +402,14 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!res.ok) throw new Error("Backend error");
             const data = await res.json();
             
-            // Filter list of devices based on logged-in email
+            // Filter list of devices based on database user-device mappings
             const loggedInEmail = localStorage.getItem("userEmail") || "";
-            const filteredData = getFilteredDevices(data, loggedInEmail);
+            const allowedUuids = await fetchUserDeviceMappings(loggedInEmail);
+            
+            let filteredData = data;
+            if (allowedUuids !== null) {
+                filteredData = data.filter(row => allowedUuids.includes(row.device_uuid));
+            }
             
             // Check if active devices list is empty
             if (!filteredData || filteredData.length === 0) {
