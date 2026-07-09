@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const cpuVal = document.getElementById("cpu-val");
     const cpuFreq = document.getElementById("cpu-freq");
     const cpuTemp = document.getElementById("cpu-temp");
+    const gpuUtil = document.getElementById("gpu-util");
+    const gpuTemp = document.getElementById("gpu-temp");
 
     const ramDial = document.getElementById("ram-dial");
     const ramVal = document.getElementById("ram-val");
@@ -35,6 +37,11 @@ document.addEventListener("DOMContentLoaded", () => {
         cpuVal.textContent = `${cpuUsage}%`;
         cpuFreq.textContent = `${freq} GHz`;
         cpuTemp.textContent = `${temp}°C`;
+
+        const gUtil = Math.floor(cpuUsage * 0.4 + getRandomArbitrary(2, 6));
+        const gTemp = (parseFloat(temp) - 2.5).toFixed(1);
+        gpuUtil.textContent = `${gUtil}%`;
+        gpuTemp.textContent = `${gTemp}°C`;
 
         const ramUsage = Math.floor(getRandomArbitrary(74, 82));
         const totalRam = 16.0;
@@ -69,6 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
         cpuVal.textContent = `${cpuUsage}%`;
         cpuFreq.textContent = cpu.frequency_mhz ? `${(cpu.frequency_mhz / 1000).toFixed(1)} GHz` : "N/A";
         cpuTemp.textContent = cpu.temperature_c ? `${cpu.temperature_c.toFixed(1)}°C` : "N/A";
+
+        gpuUtil.textContent = cpu.gpu_usage_percent !== undefined ? `${cpu.gpu_usage_percent}%` : "N/A";
+        gpuTemp.textContent = cpu.gpu_temperature_c ? `${cpu.gpu_temperature_c.toFixed(1)}°C` : "N/A";
 
         // RAM update
         const ramUsage = ram.ram_usage_percent || 0;
