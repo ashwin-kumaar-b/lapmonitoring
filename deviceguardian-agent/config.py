@@ -55,6 +55,31 @@ class ConfigManager:
         self.agent_email = os.getenv("AGENT_EMAIL", self.config.get("agent_email", ""))
         self.agent_password = os.getenv("AGENT_PASSWORD", "")
 
+        # If email is missing, show a graphical popup window to link the device
+        if not self.agent_email:
+            try:
+                import tkinter as tk
+                from tkinter import simpledialog
+                
+                root = tk.Tk()
+                root.withdraw()
+                root.attributes("-topmost", True)
+                
+                email_input = simpledialog.askstring(
+                    "DeviceGuardian Registration",
+                    "Enter your DeviceGuardian portal email to link this laptop:\n(Leave blank to skip)",
+                    parent=root
+                )
+                root.destroy()
+                
+                if email_input:
+                    self.agent_email = email_input.strip()
+                    self.config["agent_email"] = self.agent_email
+                    self.save_config()
+                    logger.info(f"Registered agent email: {self.agent_email}")
+            except Exception as ex:
+                logger.error(f"Failed to prompt for email: {ex}")
+
     def save_config(self) -> None:
         """Persists the current configuration state to config.json."""
         try:
