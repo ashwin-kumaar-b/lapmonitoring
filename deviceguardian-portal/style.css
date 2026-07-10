@@ -999,3 +999,28 @@ section {
     50% { transform: scale(0.95); opacity: 0.8; }
     100% { transform: scale(1.05); opacity: 1; }
 }
+
+/* Risk Badges */
+.risk-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+.risk-badge.low {
+    background-color: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #34D399;
+}
+.risk-badge.medium {
+    background-color: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #FBBF24;
+}
+.risk-badge.high {
+    background-color: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #F87171;
+}

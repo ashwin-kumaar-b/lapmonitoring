@@ -1,0 +1,10 @@
+[
+    "cpu_usage",
+    "cpu_temperature",
+    "gpu_utilization",
+    "gpu_temperature",
+    "memory_utilization",
+    "battery_health",
+    "ssd_storage_used",
+    "ssd_errors"
+]

@@ -140,6 +140,34 @@
             </div>
             
             <div class="dashboard-grid">
+                <!-- AI Health Prediction Card -->
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h3>AI Health Prediction</h3>
+                        <span class="status-indicator live" id="ai-health-indicator">AI ACTIVE</span>
+                    </div>
+                    <div class="dial-container">
+                        <div class="progress-dial" id="ai-health-dial" style="--percent: 100;">
+                            <div class="dial-inner">
+                                <span class="dial-value" id="ai-health-val">100%</span>
+                                <span class="dial-label">System Health</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="metric-row">
+                            <span>Failure Risk</span>
+                            <strong id="ai-risk-val" class="risk-badge low">Low</strong>
+                        </div>
+                        <div class="metric-row" style="flex-direction: column; align-items: flex-start; gap: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; margin-top: 8px;">
+                            <span>AI Diagnostics:</span>
+                            <ul id="ai-explanations" style="margin: 4px 0 0 0; padding-left: 16px; font-size: 0.85rem; color: #94A3B8; width: 100%; list-style-type: disc;">
+                                <li>All metrics within nominal limits</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- CPU Dial -->
                 <div class="card dashboard-card">
                     <div class="card-header">

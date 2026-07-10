@@ -305,6 +305,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const storageUsedText = document.getElementById("storage-used-text");
     const storageFreeText = document.getElementById("storage-free-text");
 
+    // AI Prediction selectors
+    const aiHealthDial = document.getElementById("ai-health-dial");
+    const aiHealthVal = document.getElementById("ai-health-val");
+    const aiRiskVal = document.getElementById("ai-risk-val");
+    const aiExplanations = document.getElementById("ai-explanations");
+
     const BACKEND_URL = "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/telemetry";
     let devicesCache = {};
 
@@ -354,6 +360,14 @@ document.addEventListener("DOMContentLoaded", () => {
         storageBar.style.width = `${storagePct}%`;
         storageUsedText.textContent = `${usedStorageGb} GB / ${totalStorageGb} GB (${storagePct}%)`;
         storageFreeText.textContent = `Free: ${freeStorageGb} GB`;
+
+        // Simulate AI Health Prediction
+        const simHealth = 94.5;
+        aiHealthDial.style.setProperty("--percent", Math.round(simHealth));
+        aiHealthVal.textContent = `${simHealth}%`;
+        aiRiskVal.textContent = "Low";
+        aiRiskVal.className = "risk-badge low";
+        aiExplanations.innerHTML = "<li>All metrics within nominal limits</li>";
     }
 
     /**
@@ -418,6 +432,28 @@ document.addEventListener("DOMContentLoaded", () => {
         storageBar.style.width = `${diskPct}%`;
         storageUsedText.textContent = `${usedGb} GB / ${totalGb} GB (${diskPct.toFixed(1)}%)`;
         storageFreeText.textContent = `Free: ${freeGb} GB`;
+
+        // Update real-time AI Health Prediction
+        const pred = payload.health_prediction;
+        if (pred && pred.health !== undefined) {
+            aiHealthDial.style.setProperty("--percent", Math.round(pred.health));
+            aiHealthVal.textContent = `${pred.health}%`;
+            aiRiskVal.textContent = pred.risk || "Low";
+            
+            // Risk styling class
+            const riskLower = (pred.risk || "low").toLowerCase();
+            aiRiskVal.className = `risk-badge ${riskLower}`;
+            
+            // Render explanations
+            const explList = pred.explanations || ["All metrics within nominal limits"];
+            aiExplanations.innerHTML = explList.map(e => `<li>${e}</li>`).join("");
+        } else {
+            aiHealthDial.style.setProperty("--percent", 100);
+            aiHealthVal.textContent = "N/A";
+            aiRiskVal.textContent = "Unknown";
+            aiRiskVal.className = "risk-badge low";
+            aiExplanations.innerHTML = "<li>Waiting for first background telemetry scan...</li>";
+        }
     }
 
     /**
