@@ -27,15 +27,16 @@ def parse_battery_health(val):
     return 100.0
 
 def run_worker():
-    model_path = "laptop_model.pkl"
+    model_path = "laptop_model.json"
     features_path = "laptop_feature_columns.json"
     
     if not os.path.exists(model_path) or not os.path.exists(features_path):
         print("Model or feature mapping not found in this folder!")
         return
         
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
+    import xgboost as xgb
+    model = xgb.XGBRegressor()
+    model.load_model(model_path)
         
     with open(features_path, 'r') as f:
         feature_cols = json.load(f)
