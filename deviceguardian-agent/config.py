@@ -24,7 +24,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "sampling_interval_seconds": 30,
     "backend_url": "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1",
     "auto_start": True,
-    "retry_interval_seconds": 10
+    "retry_interval_seconds": 10,
+    "agent_email": ""
 }
 
 class ConfigManager:
@@ -51,7 +52,7 @@ class ConfigManager:
         if env_backend_url:
             self.config["backend_url"] = env_backend_url
 
-        self.agent_email = os.getenv("AGENT_EMAIL", "")
+        self.agent_email = os.getenv("AGENT_EMAIL", self.config.get("agent_email", ""))
         self.agent_password = os.getenv("AGENT_PASSWORD", "")
 
     def save_config(self) -> None:

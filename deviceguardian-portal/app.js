@@ -529,6 +529,28 @@ document.addEventListener("DOMContentLoaded", () => {
             
             let filteredData = data;
             if (allowedUuids !== null) {
+                // Auto-associate based on matching agent_email inside payload
+                data.forEach(row => {
+                    const devEmail = (row.payload?.system?.agent_email || "").toLowerCase();
+                    if (devEmail === loggedInEmail.toLowerCase() && !allowedUuids.includes(row.device_uuid)) {
+                        console.log("Auto-mapping device via agent email config:", row.device_name, "to", loggedInEmail);
+                        allowedUuids.push(row.device_uuid);
+                        
+                        // Async write to database to persist this link permanently
+                        fetch("https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings", {
+                            method: "POST",
+                            headers: {
+                                "apikey": supabase_key,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                username: loggedInEmail,
+                                device_uuid: row.device_uuid
+                            })
+                        }).catch(err => console.error("Error persisting auto-mapping:", err));
+                    }
+                });
+
                 // If there are no mappings in the database yet, try to auto-associate based on email prefix
                 if (allowedUuids.length === 0) {
                     const prefix = loggedInEmail.split("@")[0].toLowerCase();

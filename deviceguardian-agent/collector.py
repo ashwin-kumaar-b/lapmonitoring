@@ -6,8 +6,8 @@ import wmi
 import psutil
 import win32api
 import winreg
-from typing import Dict, Any, Optional, Tuple
 from logger import logger
+from config import config_manager
 
 # Initialize pythoncom for WMI in multithreaded environment if needed (done inside collector calls)
 # to prevent CoInitialize issues when called from different threads.
@@ -409,7 +409,8 @@ class SystemTelemetryCollector:
                 "username": self.username,
                 "windows_version": self.windows_version,
                 "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-                "device_uuid": self.device_uuid
+                "device_uuid": self.device_uuid,
+                "agent_email": config_manager.agent_email
             }
         }
         return payload
