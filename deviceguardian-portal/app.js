@@ -310,6 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const aiHealthVal = document.getElementById("ai-health-val");
     const aiRiskVal = document.getElementById("ai-risk-val");
     const aiExplanations = document.getElementById("ai-explanations");
+    const aiShapContribs = document.getElementById("ai-shap-contribs");
 
     const BACKEND_URL = "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/telemetry";
     let devicesCache = {};
@@ -368,6 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
         aiRiskVal.textContent = "Low";
         aiRiskVal.className = "risk-badge low";
         aiExplanations.innerHTML = "<li>All metrics within nominal limits</li>";
+        aiShapContribs.innerHTML = "<li>• cpu_temperature: -3.2%</li><li>• gpu_temperature: -2.3%</li>";
     }
 
     /**
@@ -447,12 +449,22 @@ document.addEventListener("DOMContentLoaded", () => {
             // Render explanations
             const explList = pred.explanations || ["All metrics within nominal limits"];
             aiExplanations.innerHTML = explList.map(e => `<li>${e}</li>`).join("");
+            
+            // Render SHAP contributions
+            const shapDict = pred.shap_contributions || {};
+            const shapKeys = Object.keys(shapDict);
+            if (shapKeys.length > 0) {
+                aiShapContribs.innerHTML = shapKeys.map(k => `<li>• ${k.replace('_', ' ')}: ${shapDict[k]}%</li>`).join("");
+            } else {
+                aiShapContribs.innerHTML = "<li>None (100% healthy)</li>";
+            }
         } else {
             aiHealthDial.style.setProperty("--percent", 100);
             aiHealthVal.textContent = "N/A";
             aiRiskVal.textContent = "Unknown";
             aiRiskVal.className = "risk-badge low";
             aiExplanations.innerHTML = "<li>Waiting for first background telemetry scan...</li>";
+            aiShapContribs.innerHTML = "<li>Waiting for first background telemetry scan...</li>";
         }
     }
 

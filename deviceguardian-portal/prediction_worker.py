@@ -5,6 +5,7 @@ import pickle
 import requests
 import numpy as np
 import pandas as pd
+import shap
 
 SUPABASE_URL = "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/telemetry"
 SUPABASE_HEADERS = {
@@ -39,7 +40,9 @@ def run_worker():
     with open(features_path, 'r') as f:
         feature_cols = json.load(f)
         
-    print("DeviceGuardian AI - Prediction Worker started.")
+    # Initialize TreeExplainer once
+    explainer = shap.TreeExplainer(model)
+    print("DeviceGuardian AI - Prediction Worker started with SHAP Explainer.")
     
     while True:
         try:
@@ -89,6 +92,14 @@ def run_worker():
                 # Run prediction
                 pred_health = float(model.predict(df_input)[0])
                 
+                # Run SHAP local explanation
+                shap_values = explainer(df_input)
+                shap_contribs = {}
+                for col, val in zip(feature_cols, shap_values.values[0]):
+                    # If SHAP value is negative, it represents health deduction
+                    if val < -0.05:
+                        shap_contribs[col] = round(float(val), 2)
+                
                 # Define risk
                 if pred_health < 80.0:
                     risk = "High"
@@ -117,12 +128,13 @@ def run_worker():
                     "health": round(pred_health, 1),
                     "risk": risk,
                     "explanations": explanations,
+                    "shap_contributions": shap_contribs,
                     "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
                 }
                 
                 # Check if prediction needs update
                 existing_pred = payload.get("health_prediction", {})
-                if existing_pred.get("health") != pred_block["health"] or len(existing_pred.get("explanations", [])) != len(explanations):
+                if existing_pred.get("health") != pred_block["health"] or "shap_contributions" not in existing_pred or len(existing_pred.get("explanations", [])) != len(explanations):
                     # Merge prediction into payload
                     payload["health_prediction"] = pred_block
                     
