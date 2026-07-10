@@ -6,6 +6,7 @@ import wmi
 import psutil
 import win32api
 import winreg
+from typing import Dict, Any, Optional, Tuple
 from logger import logger
 from config import config_manager
 
