@@ -6,6 +6,8 @@ import requests
 import numpy as np
 import pandas as pd
 import shap
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 SUPABASE_URL = "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/telemetry"
 SUPABASE_HEADERS = {
@@ -27,16 +29,15 @@ def parse_battery_health(val):
     return 100.0
 
 def run_worker():
-    model_path = "laptop_model.json"
+    model_path = "laptop_model.pkl"
     features_path = "laptop_feature_columns.json"
     
     if not os.path.exists(model_path) or not os.path.exists(features_path):
         print("Model or feature mapping not found in this folder!")
         return
         
-    import xgboost as xgb
-    model = xgb.Booster()
-    model.load_model(model_path)
+    with open(model_path, 'rb') as f:
+        model = pickle.load(f)
         
     with open(features_path, 'r') as f:
         feature_cols = json.load(f)
@@ -90,9 +91,8 @@ def run_worker():
                 
                 df_input = pd.DataFrame(input_data)[feature_cols]
                 
-                # Run prediction using core booster DMatrix
-                dmatrix = xgb.DMatrix(df_input)
-                pred_health = float(model.predict(dmatrix)[0])
+                # Run prediction
+                pred_health = float(model.predict(df_input)[0])
                 
                 # Run SHAP local explanation
                 shap_values = explainer(df_input)
@@ -178,5 +178,31 @@ def run_worker():
             
         time.sleep(2)
 
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/' or self.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"status": "healthy"}')
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    # Suppress standard logging to keep console clean
+    def log_message(self, format, *args):
+        pass
+
+def start_health_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
+    print(f"Health check HTTP server started on port {port}")
+    server.serve_forever()
+
 if __name__ == "__main__":
+    # Start the web health check server in a background thread to satisfy Render's port binding check
+    t = threading.Thread(target=start_health_server, daemon=True)
+    t.start()
+    
+    # Run the actual prediction loop in the main thread
     run_worker()
