@@ -35,7 +35,7 @@ def run_worker():
         return
         
     import xgboost as xgb
-    model = xgb.XGBRegressor()
+    model = xgb.Booster()
     model.load_model(model_path)
         
     with open(features_path, 'r') as f:
@@ -90,8 +90,9 @@ def run_worker():
                 
                 df_input = pd.DataFrame(input_data)[feature_cols]
                 
-                # Run prediction
-                pred_health = float(model.predict(df_input)[0])
+                # Run prediction using core booster DMatrix
+                dmatrix = xgb.DMatrix(df_input)
+                pred_health = float(model.predict(dmatrix)[0])
                 
                 # Run SHAP local explanation
                 shap_values = explainer(df_input)
