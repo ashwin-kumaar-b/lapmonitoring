@@ -108,6 +108,30 @@ def run_worker():
                 else:
                     risk = "Low"
                     
+                # Remaining Useful Life (RUL) estimation model
+                # Base RUL for a brand new laptop is 36 months (3 years)
+                base_rul = 36.0
+                
+                # Apply multipliers based on health, thermal stress, and SSD error indicators
+                health_factor = (pred_health / 100.0) ** 1.5
+                
+                # Accelerated aging multipliers
+                thermal_multiplier = 1.0
+                if cpu_temp > 80.0 or gpu_temp > 75.0:
+                    thermal_multiplier = 0.7  # Silicon aging accelerates under heat
+                if cpu_temp > 90.0:
+                    thermal_multiplier = 0.4
+                    
+                ssd_multiplier = 1.0
+                if ssd_errs > 0:
+                    ssd_multiplier = max(0.1, 1.0 - (ssd_errs * 0.15))  # High disk error count decimates drive RUL
+                    
+                battery_multiplier = 1.0
+                if bat_health < 80.0:
+                    battery_multiplier = max(0.2, bat_health / 100.0)
+                    
+                rul_months = round(base_rul * health_factor * thermal_multiplier * ssd_multiplier * battery_multiplier, 1)
+
                 # Define rule-based explanations matching input profiles
                 explanations = []
                 if cpu_temp > 85.0:
@@ -127,6 +151,7 @@ def run_worker():
                 pred_block = {
                     "health": round(pred_health, 1),
                     "risk": risk,
+                    "remaining_useful_life_months": rul_months,
                     "explanations": explanations,
                     "shap_contributions": shap_contribs,
                     "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -134,7 +159,7 @@ def run_worker():
                 
                 # Check if prediction needs update
                 existing_pred = payload.get("health_prediction", {})
-                if existing_pred.get("health") != pred_block["health"] or "shap_contributions" not in existing_pred or len(existing_pred.get("explanations", [])) != len(explanations):
+                if existing_pred.get("health") != pred_block["health"] or "remaining_useful_life_months" not in existing_pred or "shap_contributions" not in existing_pred or len(existing_pred.get("explanations", [])) != len(explanations):
                     # Merge prediction into payload
                     payload["health_prediction"] = pred_block
                     
@@ -142,7 +167,7 @@ def run_worker():
                     patch_url = f"{SUPABASE_URL}?device_uuid=eq.{uuid}"
                     patch_res = requests.patch(patch_url, headers=SUPABASE_HEADERS, json={"payload": payload})
                     if patch_res.ok:
-                        print(f"Updated predictions for {name} ({uuid[:8]}): Health {pred_block['health']}% | Risk: {risk}")
+                        print(f"Updated predictions for {name} ({uuid[:8]}): Health {pred_block['health']}% | Risk: {risk} | RUL: {rul_months} Months")
                     else:
                         print(f"Failed to update {name}: {patch_res.status_code} {patch_res.text}")
                         

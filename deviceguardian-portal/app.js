@@ -311,6 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const aiRiskVal = document.getElementById("ai-risk-val");
     const aiExplanations = document.getElementById("ai-explanations");
     const aiShapContribs = document.getElementById("ai-shap-contribs");
+    const aiRulVal = document.getElementById("ai-rul-val");
 
     const BACKEND_URL = "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/telemetry";
     let devicesCache = {};
@@ -368,6 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
         aiHealthVal.textContent = `${simHealth}%`;
         aiRiskVal.textContent = "Low";
         aiRiskVal.className = "risk-badge low";
+        aiRulVal.textContent = "34.0 Months";
         aiExplanations.innerHTML = "<li>All metrics within nominal limits</li>";
         aiShapContribs.innerHTML = "<li>• cpu_temperature: -3.2%</li><li>• gpu_temperature: -2.3%</li>";
     }
@@ -446,6 +448,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const riskLower = (pred.risk || "low").toLowerCase();
             aiRiskVal.className = `risk-badge ${riskLower}`;
             
+            // Render RUL
+            if (pred.remaining_useful_life_months !== undefined) {
+                aiRulVal.textContent = `${pred.remaining_useful_life_months} Months`;
+            } else {
+                // Estimate client-side as fallback if not in database
+                const baseRul = 36.0;
+                const calcRul = (baseRul * Math.pow(pred.health / 100.0, 1.5)).toFixed(1);
+                aiRulVal.textContent = `${calcRul} Months`;
+            }
+            
             // Render explanations
             const explList = pred.explanations || ["All metrics within nominal limits"];
             aiExplanations.innerHTML = explList.map(e => `<li>${e}</li>`).join("");
@@ -463,6 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
             aiHealthVal.textContent = "N/A";
             aiRiskVal.textContent = "Unknown";
             aiRiskVal.className = "risk-badge low";
+            aiRulVal.textContent = "N/A";
             aiExplanations.innerHTML = "<li>Waiting for first background telemetry scan...</li>";
             aiShapContribs.innerHTML = "<li>Waiting for first background telemetry scan...</li>";
         }
