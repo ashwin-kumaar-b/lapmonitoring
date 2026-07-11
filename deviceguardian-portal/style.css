@@ -692,8 +692,9 @@ section {
 
 .device-dropdown {
     padding: 0.6rem 1.5rem;
+    padding-right: 2.5rem;
     border-radius: 8px;
-    background-color: var(--bg-card);
+    background-color: #121824;
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     font-family: var(--font-body);
@@ -701,6 +702,17 @@ section {
     outline: none;
     cursor: pointer;
     transition: var(--transition-smooth);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.device-dropdown option {
+    background-color: #121824;
+    color: var(--text-primary);
 }
 
 .device-dropdown:hover, .device-dropdown:focus {
