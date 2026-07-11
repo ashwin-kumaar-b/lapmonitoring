@@ -694,28 +694,28 @@ section {
     padding: 0.7rem 1.8rem;
     padding-right: 2.8rem;
     border-radius: 20px;
-    background-color: rgba(22, 28, 45, 0.45);
+    background-color: #141829 !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(6, 182, 212, 0.25);
-    color: var(--text-primary);
+    border: 1px solid rgba(6, 182, 212, 0.35) !important;
+    color: var(--text-primary) !important;
     font-family: var(--font-body);
     font-size: 0.95rem;
     outline: none;
     cursor: pointer;
     transition: var(--transition-smooth);
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 14px center !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
 }
 
 .device-dropdown option {
-    background-color: #121824;
-    color: var(--text-primary);
+    background-color: #141829 !important;
+    color: var(--text-primary) !important;
 }
 
 .device-dropdown:hover, .device-dropdown:focus {
