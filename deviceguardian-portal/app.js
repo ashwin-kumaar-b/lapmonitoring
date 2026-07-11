@@ -1,4 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // Wake up and keep Render backend service alive while the portal is open
+    const wakeBackend = () => {
+        fetch("https://lapmonitoring.onrender.com/health").catch(() => {});
+    };
+    wakeBackend();
+    setInterval(wakeBackend, 60000); // Ping every 60 seconds
+
     // Initialize Lucide Icons
     if (window.lucide) {
         window.lucide.createIcons();
@@ -315,6 +322,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const BACKEND_URL = "https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/telemetry";
     let devicesCache = {};
+    let allDevicesList = [];
+    let allowedUuidsCache = [];
 
     function getRandomArbitrary(min, max) {
         return Math.random() * (max - min) + min;
@@ -527,6 +536,40 @@ document.addEventListener("DOMContentLoaded", () => {
             const loggedInEmail = localStorage.getItem("userEmail") || "";
             const allowedUuids = await fetchUserDeviceMappings(loggedInEmail);
             
+            allDevicesList = data;
+            allowedUuidsCache = allowedUuids || [];
+
+            // Local agent auto-detection check
+            if (allowedUuids !== null && loggedInEmail) {
+                try {
+                    const localRes = await fetch("http://127.0.0.1:31415/device_uuid");
+                    if (localRes.ok) {
+                        const localJson = await localRes.json();
+                        const localUuid = localJson.device_uuid;
+                        if (localUuid && !allowedUuids.includes(localUuid)) {
+                            console.log("Auto-detected local physical device:", localUuid);
+                            allowedUuids.push(localUuid);
+                            allowedUuidsCache.push(localUuid);
+                            
+                            // Async write mapping to database
+                            fetch("https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings", {
+                                method: "POST",
+                                headers: {
+                                    "apikey": supabase_key,
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    username: loggedInEmail,
+                                    device_uuid: localUuid
+                                })
+                            }).catch(err => console.error("Error saving local auto-detection:", err));
+                        }
+                    }
+                } catch (err) {
+                    console.log("Local agent auto-detection not active");
+                }
+            }
+
             let filteredData = data;
             if (allowedUuids !== null) {
                 const prefix = loggedInEmail.split("@")[0].toLowerCase();
@@ -538,8 +581,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     const winUser = (row.payload?.system?.username || "").toLowerCase();
                     
                     // Check if the device matches the user's email or prefix
-                    const isEmailMatch = (devEmail === loggedInEmail.toLowerCase());
-                    const isPrefixMatch = devName.includes(prefix) || winUser.includes(prefix) || prefix.includes(winUser);
+                    const isEmailMatch = devEmail && (devEmail === loggedInEmail.toLowerCase());
+                    let isPrefixMatch = false;
+                    if (prefix && prefix.length > 1) {
+                        const hasDevNameMatch = devName && devName.length > 1 && devName.includes(prefix);
+                        const hasWinUserMatch = winUser && winUser.length > 1 && (winUser.includes(prefix) || prefix.includes(winUser));
+                        isPrefixMatch = hasDevNameMatch || hasWinUserMatch;
+                    }
                     
                     if ((isEmailMatch || isPrefixMatch) && !allowedUuids.includes(row.device_uuid)) {
                         console.log("Auto-mapping new device:", row.device_name, "to", loggedInEmail);
@@ -594,6 +642,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 deviceSelect.appendChild(opt);
             });
 
+            // Add option to link a new device manually
+            const linkOpt = document.createElement("option");
+            linkOpt.value = "link_device_prompt";
+            linkOpt.textContent = "➕ Link a New Device to Account...";
+            deviceSelect.appendChild(linkOpt);
+
             // Restore selection or select the first real laptop automatically if it was on simulation
             if (currentSelected && devicesCache[currentSelected]) {
                 deviceSelect.value = currentSelected;
@@ -622,6 +676,59 @@ document.addEventListener("DOMContentLoaded", () => {
         const val = deviceSelect.value;
         if (val === "simulation") {
             simulateMetrics();
+        } else if (val === "link_device_prompt") {
+            // Restore selection
+            deviceSelect.value = "simulation";
+            simulateMetrics();
+
+            const loggedInEmail = localStorage.getItem("userEmail") || "";
+            if (!loggedInEmail) {
+                alert("Please sign in first to link a device.");
+                return;
+            }
+
+            // Find all active devices not already mapped to this account
+            const unmapped = allDevicesList.filter(d => !allowedUuidsCache.includes(d.device_uuid));
+            if (unmapped.length === 0) {
+                alert("All online devices are already mapped to accounts, or no other devices are active.");
+                return;
+            }
+
+            let msg = "Select a device to link to your account:\n\n";
+            unmapped.forEach((d, idx) => {
+                msg += `${idx + 1}. ${d.device_name} (ID: ${d.device_uuid.slice(0, 8)})\n`;
+            });
+            msg += "\nEnter the number of the device you want to link:";
+
+            const choiceStr = prompt(msg);
+            if (choiceStr === null) return; // User cancelled
+            const choice = parseInt(choiceStr, 10);
+            if (choice > 0 && choice <= unmapped.length) {
+                const targetDevice = unmapped[choice - 1];
+                
+                fetch("https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings", {
+                    method: "POST",
+                    headers: {
+                        "apikey": supabase_key,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username: loggedInEmail,
+                        device_uuid: targetDevice.device_uuid
+                    })
+                })
+                .then(res => {
+                    if (res.ok) {
+                        alert(`Successfully linked ${targetDevice.device_name} to your account!`);
+                        fetchDevices();
+                    } else {
+                        alert("Failed to link device.");
+                    }
+                })
+                .catch(err => alert("Error linking device: " + err.message));
+            } else {
+                alert("Invalid choice.");
+            }
         } else if (devicesCache[val]) {
             updateWithRealData(devicesCache[val]);
         }
