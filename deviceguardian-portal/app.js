@@ -642,12 +642,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 deviceSelect.appendChild(opt);
             });
 
-            // Add option to link a new device manually
-            const linkOpt = document.createElement("option");
-            linkOpt.value = "link_device_prompt";
-            linkOpt.textContent = "➕ Link a New Device to Account...";
-            deviceSelect.appendChild(linkOpt);
-
             // Restore selection or select the first real laptop automatically if it was on simulation
             if (currentSelected && devicesCache[currentSelected]) {
                 deviceSelect.value = currentSelected;
@@ -676,59 +670,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const val = deviceSelect.value;
         if (val === "simulation") {
             simulateMetrics();
-        } else if (val === "link_device_prompt") {
-            // Restore selection
-            deviceSelect.value = "simulation";
-            simulateMetrics();
-
-            const loggedInEmail = localStorage.getItem("userEmail") || "";
-            if (!loggedInEmail) {
-                alert("Please sign in first to link a device.");
-                return;
-            }
-
-            // Find all active devices not already mapped to this account
-            const unmapped = allDevicesList.filter(d => !allowedUuidsCache.includes(d.device_uuid));
-            if (unmapped.length === 0) {
-                alert("All online devices are already mapped to accounts, or no other devices are active.");
-                return;
-            }
-
-            let msg = "Select a device to link to your account:\n\n";
-            unmapped.forEach((d, idx) => {
-                msg += `${idx + 1}. ${d.device_name} (ID: ${d.device_uuid.slice(0, 8)})\n`;
-            });
-            msg += "\nEnter the number of the device you want to link:";
-
-            const choiceStr = prompt(msg);
-            if (choiceStr === null) return; // User cancelled
-            const choice = parseInt(choiceStr, 10);
-            if (choice > 0 && choice <= unmapped.length) {
-                const targetDevice = unmapped[choice - 1];
-                
-                fetch("https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings", {
-                    method: "POST",
-                    headers: {
-                        "apikey": supabase_key,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        username: loggedInEmail,
-                        device_uuid: targetDevice.device_uuid
-                    })
-                })
-                .then(res => {
-                    if (res.ok) {
-                        alert(`Successfully linked ${targetDevice.device_name} to your account!`);
-                        fetchDevices();
-                    } else {
-                        alert("Failed to link device.");
-                    }
-                })
-                .catch(err => alert("Error linking device: " + err.message));
-            } else {
-                alert("Invalid choice.");
-            }
         } else if (devicesCache[val]) {
             updateWithRealData(devicesCache[val]);
         }
