@@ -295,8 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const cpuVal = document.getElementById("cpu-val");
     const cpuFreq = document.getElementById("cpu-freq");
     const cpuTemp = document.getElementById("cpu-temp");
-    const gpuUtil = document.getElementById("gpu-util");
-    const gpuTemp = document.getElementById("gpu-temp");
+    const gpuListContainer = document.getElementById("gpu-list-container");
 
     const ramDial = document.getElementById("ram-dial");
     const ramVal = document.getElementById("ram-val");
@@ -344,8 +343,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const gUtil = Math.floor(cpuUsage * 0.4 + getRandomArbitrary(2, 6));
         const gTemp = (parseFloat(temp) - 2.5).toFixed(1);
-        gpuUtil.textContent = `${gUtil}%`;
-        gpuTemp.textContent = `${gTemp}°C`;
+        
+        gpuListContainer.innerHTML = `
+            <div class="metric-row">
+                <span>GPU Utilization</span>
+                <strong>${gUtil}%</strong>
+            </div>
+            <div class="metric-row">
+                <span>GPU Temp</span>
+                <strong>${gTemp}°C</strong>
+            </div>
+        `;
 
         const ramUsage = Math.floor(getRandomArbitrary(74, 82));
         const totalRam = 16.0;
@@ -399,8 +407,34 @@ document.addEventListener("DOMContentLoaded", () => {
         cpuFreq.textContent = cpu.frequency_mhz ? `${(cpu.frequency_mhz / 1000).toFixed(1)} GHz` : "N/A";
         cpuTemp.textContent = cpu.temperature_c ? `${cpu.temperature_c.toFixed(1)}°C` : "N/A";
 
-        gpuUtil.textContent = cpu.gpu_usage_percent !== undefined ? `${cpu.gpu_usage_percent}%` : "N/A";
-        gpuTemp.textContent = cpu.gpu_temperature_c ? `${cpu.gpu_temperature_c.toFixed(1)}°C` : "N/A";
+        // Render GPUs (support single or multiple GPUs dynamically)
+        if (payload.gpus && payload.gpus.length > 0) {
+            gpuListContainer.innerHTML = "";
+            payload.gpus.forEach(gpu => {
+                const shortName = gpu.name.replace("(R)", "").replace("(TM)", "").replace("Graphics", "GPU");
+                
+                const rowUtil = document.createElement("div");
+                rowUtil.className = "metric-row";
+                rowUtil.innerHTML = `<span>${shortName} Util</span><strong>${gpu.utilization_percent}%</strong>`;
+                gpuListContainer.appendChild(rowUtil);
+                
+                const rowTemp = document.createElement("div");
+                rowTemp.className = "metric-row";
+                rowTemp.innerHTML = `<span>${shortName} Temp</span><strong>${gpu.temperature_c.toFixed(1)}°C</strong>`;
+                gpuListContainer.appendChild(rowTemp);
+            });
+        } else {
+            gpuListContainer.innerHTML = `
+                <div class="metric-row">
+                    <span>GPU Utilization</span>
+                    <strong>${cpu.gpu_usage_percent !== undefined ? `${cpu.gpu_usage_percent}%` : "N/A"}</strong>
+                </div>
+                <div class="metric-row">
+                    <span>GPU Temp</span>
+                    <strong>${cpu.gpu_temperature_c ? `${cpu.gpu_temperature_c.toFixed(1)}°C` : "N/A"}</strong>
+                </div>
+            `;
+        }
 
         // RAM update
         const ramUsage = ram.ram_usage_percent || 0;

@@ -8,6 +8,30 @@ from collector import collector
 from uploader import uploader
 from startup import sync_startup_config
 from tray import SystemTrayApp
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+class LocalDeviceUUIDHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/device_uuid':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(f'{{"device_uuid": "{collector.device_uuid}"}}'.encode('utf-8'))
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        pass
+
+def start_local_uuid_server():
+    try:
+        server = HTTPServer(('127.0.0.1', 31415), LocalDeviceUUIDHandler)
+        logger.info("Local UUID server listening on http://127.0.0.1:31415")
+        server.serve_forever()
+    except Exception as e:
+        logger.error(f"Failed to start local UUID server: {e}")
 
 class DeviceGuardianAgent:
     """Main orchestrator for the DeviceGuardian AI Windows Monitoring Agent."""
@@ -32,6 +56,14 @@ class DeviceGuardianAgent:
             daemon=True
         )
         self.monitor_thread.start()
+
+        # 2.5 Spawn the local UUID sharing server
+        self.uuid_server_thread = threading.Thread(
+            target=start_local_uuid_server,
+            name="LocalUuidServerThread",
+            daemon=True
+        )
+        self.uuid_server_thread.start()
 
         # 3. Launch system tray (Runs on main thread to keep application alive)
         self.tray_app = SystemTrayApp(
