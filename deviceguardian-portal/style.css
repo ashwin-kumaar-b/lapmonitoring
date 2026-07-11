@@ -564,6 +564,66 @@ section {
     background: #00E5FF;
     box-shadow: 0 15px 35px -5px rgba(6, 182, 212, 0.7);
     transform: translateY(-1px);
+}
+
+/* Setup Instructions styling */
+.setup-instructions {
+    margin-top: 4rem;
+    text-align: left;
+}
+
+.setup-instructions h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-align: center;
+    color: var(--accent-cyan);
+}
+
+.instructions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.step-card {
+    padding: 2rem;
+    border-radius: 12px;
+    background: rgba(11, 15, 25, 0.4);
+    border: 1px solid var(--border-color);
+    position: relative;
+    transition: var(--transition-smooth);
+}
+
+.step-card:hover {
+    border-color: rgba(6, 182, 212, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -10px rgba(6, 182, 212, 0.1);
+}
+
+.step-num {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: rgba(6, 182, 212, 0.15);
+    line-height: 1;
+}
+
+.step-card h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    color: var(--text-primary);
+}
+
+.step-card p {
+    font-size: 0.9rem;
+    color: var(--text-secondary) !important;
+    line-height: 1.5;
+    margin-bottom: 0;
+}
 
 /* Footer */
 .app-footer {
@@ -632,31 +692,16 @@ section {
 }
 
 .device-dropdown {
-    padding: 0.7rem 1.8rem;
-    padding-right: 2.8rem;
-    border-radius: 20px;
-    background-color: #141829 !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(6, 182, 212, 0.35) !important;
-    color: var(--text-primary) !important;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
     font-family: var(--font-body);
     font-size: 0.95rem;
     outline: none;
     cursor: pointer;
     transition: var(--transition-smooth);
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 14px center !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
-}
-
-.device-dropdown option {
-    background-color: #141829 !important;
-    color: var(--text-primary) !important;
 }
 
 .device-dropdown:hover, .device-dropdown:focus {
