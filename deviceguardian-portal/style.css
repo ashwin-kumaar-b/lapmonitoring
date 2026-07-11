@@ -564,6 +564,64 @@ section {
     background: #00E5FF;
     box-shadow: 0 15px 35px -5px rgba(6, 182, 212, 0.7);
     transform: translateY(-1px);
+
+/* Setup Instructions styling */
+.setup-instructions {
+    margin-top: 4rem;
+    text-align: left;
+}
+
+.setup-instructions h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-align: center;
+    color: var(--accent-cyan);
+}
+
+.instructions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.step-card {
+    padding: 2rem;
+    border-radius: 12px;
+    background: rgba(11, 15, 25, 0.4);
+    border: 1px solid var(--border-color);
+    position: relative;
+    transition: var(--transition-smooth);
+}
+
+.step-card:hover {
+    border-color: rgba(6, 182, 212, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -10px rgba(6, 182, 212, 0.1);
+}
+
+.step-num {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: rgba(6, 182, 212, 0.15);
+    line-height: 1;
+}
+
+.step-card h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    color: var(--text-primary);
+}
+
+.step-card p {
+    font-size: 0.9rem;
+    color: var(--text-secondary) !important;
+    line-height: 1.5;
+    margin-bottom: 0;
 }
 
 /* Footer */
