@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Check login state
-    if (localStorage.getItem("isLoggedIn") === "true") {
+    if (sessionStorage.getItem("isLoggedIn") === "true") {
         loginView.style.display = "none";
         appView.style.display = "block";
         btnNavSignout.style.display = "inline-block";
@@ -113,7 +113,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Sign Out Handler
     btnNavSignout.addEventListener("click", (e) => {
         e.preventDefault();
-        localStorage.removeItem("isLoggedIn");
+        sessionStorage.removeItem("isLoggedIn");
+        sessionStorage.removeItem("userEmail");
         appView.style.display = "none";
         loginView.style.display = "flex";
         btnNavSignout.style.display = "none";
@@ -236,8 +237,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (isSignUpMode) {
                             // If auto-logged in, navigate to dashboard
                             if (responseData.access_token) {
-                                localStorage.setItem("userEmail", usernameOrEmail);
-                                localStorage.setItem("isLoggedIn", "true");
+                                sessionStorage.setItem("userEmail", usernameOrEmail);
+                                sessionStorage.setItem("isLoggedIn", "true");
                                 loginView.style.opacity = "0";
                                 setTimeout(() => {
                                     loginView.style.display = "none";
@@ -259,8 +260,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             }
                         } else {
                             // Sign in success
-                            localStorage.setItem("userEmail", usernameOrEmail);
-                            localStorage.setItem("isLoggedIn", "true");
+                            sessionStorage.setItem("userEmail", usernameOrEmail);
+                            sessionStorage.setItem("isLoggedIn", "true");
                             loginView.style.opacity = "0";
                             setTimeout(() => {
                                 loginView.style.display = "none";
@@ -481,35 +482,106 @@ document.addEventListener("DOMContentLoaded", () => {
         storageFreeText.textContent = `Free: ${freeGb} GB`;
 
         // Update real-time AI Health Prediction
+        const systemMap = payload.system || {};
+        const winVersion = String(systemMap.windows_version || "").toLowerCase();
+        const devName = String(systemMap.device_name || "").toLowerCase();
+        
+        let isLaptop = false;
+        if (
+            winVersion.includes("windows") ||
+            devName.includes("laptop") ||
+            devName.includes("pc") ||
+            devName.includes("ashwin") ||
+            devName.includes("amudieshwar") ||
+            devName.includes("devesh") ||
+            payload.gpus ||
+            payload.disk_health
+        ) {
+            isLaptop = true;
+        }
+
         const pred = payload.health_prediction;
-        if (pred && pred.health !== undefined) {
-            aiHealthDial.style.setProperty("--percent", Math.round(pred.health));
-            aiHealthVal.textContent = `${pred.health}%`;
-            aiRiskVal.textContent = pred.risk || "Low";
+        let displayHealth = pred ? parseFloat(pred.health) : 100.0;
+        let rulMonths = pred ? parseFloat(pred.remaining_useful_life_months) : 36.0;
+        let risk = pred ? pred.risk : "Low";
+        let explanationsList = pred ? (pred.explanations || []) : ["All metrics within nominal limits"];
+        let shapDict = pred ? (pred.shap_contributions || {}) : {};
+
+        if (!isLaptop) {
+            // Apply phone operational deductions dynamically
+            const nativeHealth = payload.native_battery_health_percentage;
+            let baseHealth = nativeHealth !== undefined ? parseFloat(nativeHealth) : 100.0;
             
-            // Risk styling class
-            const riskLower = (pred.risk || "low").toLowerCase();
-            aiRiskVal.className = `risk-badge ${riskLower}`;
+            const tempVal = parseFloat(cpu.temperature_c !== undefined ? cpu.temperature_c : (cpu.gpu_temperature_c || 35.0));
+            const storageVal = parseFloat(storage.disk_usage_percent !== undefined ? storage.disk_usage_percent : 0.0);
+            const cpuVal = parseFloat(cpu.usage_percent !== undefined ? cpu.usage_percent : 0.0);
+            const ramVal = parseFloat(ram.ram_usage_percent !== undefined ? ram.ram_usage_percent : 0.0);
             
-            // Render RUL
-            if (pred.remaining_useful_life_months !== undefined) {
-                aiRulVal.textContent = `${pred.remaining_useful_life_months} Months`;
-            } else {
-                // Estimate client-side as fallback if not in database
-                const baseRul = 36.0;
-                const calcRul = (baseRul * Math.pow(pred.health / 100.0, 1.5)).toFixed(1);
-                aiRulVal.textContent = `${calcRul} Months`;
+            let deductions = 0.0;
+            const dynamicExplanations = [];
+            
+            if (tempVal > 38.0) {
+                deductions += (tempVal - 38.0) * 1.5;
+                dynamicExplanations.push(`Thermal stress active (${tempVal.toFixed(1)}°C)`);
+            }
+            if (tempVal > 42.0) {
+                deductions += (tempVal - 42.0) * 1.0;
+            }
+            if (storageVal > 75.0) {
+                deductions += (storageVal - 75.0) * 0.4;
+                dynamicExplanations.push(`Storage capacity low (${storageVal.toFixed(1)}% used)`);
+            }
+            if (cpuVal > 80.0) {
+                deductions += (cpuVal - 80.0) * 0.2;
+                dynamicExplanations.push("High CPU processing load detected");
+            }
+            if (ramVal > 80.0) {
+                deductions += (ramVal - 80.0) * 0.3;
+                dynamicExplanations.push("High RAM memory allocation active");
             }
             
-            // Render explanations
-            const explList = pred.explanations || ["All metrics within nominal limits"];
-            aiExplanations.innerHTML = explList.map(e => `<li>${e}</li>`).join("");
+            displayHealth = Math.max(0.0, Math.min(100.0, baseHealth - deductions));
             
-            // Render SHAP contributions
-            const shapDict = pred.shap_contributions || {};
+            if (displayHealth < 75.0) {
+                risk = "High";
+            } else if (displayHealth < 85.0) {
+                risk = "Medium";
+            } else {
+                risk = "Low";
+            }
+            
+            explanationsList = dynamicExplanations.length > 0 ? dynamicExplanations : ["All metrics within nominal limits"];
+            
+            const nativeRul = payload.native_remaining_useful_life_months;
+            if (nativeRul !== undefined) {
+                rulMonths = parseFloat(nativeRul);
+            } else {
+                rulMonths = 36.0 * ((displayHealth - 80.0) / 20.0);
+                if (rulMonths < 0) rulMonths = 0;
+                if (rulMonths > 36) rulMonths = 36;
+            }
+            rulMonths = parseFloat(rulMonths.toFixed(1));
+            
+            shapDict = {
+                "Thermal Stress": tempVal > 35.0 ? `-${Math.round((tempVal - 35.0) * 4.5)}%` : "0%",
+                "Storage Space": storageVal > 50.0 ? `-${Math.round((storageVal - 50.0) * 1.2)}%` : "0%",
+                "CPU Load": `-${Math.round(cpuVal * 0.15)}%`,
+                "RAM Allocation": `-${Math.round(ramVal * 0.2)}%`,
+                "Battery Age (Cycles)": `-${Math.round(100.0 - baseHealth)}%`
+            };
+        }
+
+        if (pred && pred.health !== undefined || !isLaptop) {
+            aiHealthDial.style.setProperty("--percent", Math.round(displayHealth));
+            aiHealthVal.textContent = `${displayHealth.toFixed(1)}%`;
+            aiRiskVal.textContent = risk + (risk.toLowerCase().includes("risk") ? "" : " Risk");
+            aiRiskVal.className = `risk-badge ${(risk || "low").toLowerCase().replace(" risk", "")}`;
+            aiRulVal.textContent = `${rulMonths} Months`;
+            aiExplanations.innerHTML = explanationsList.map(e => `<li>${e}</li>`).join("");
+            
             const shapKeys = Object.keys(shapDict);
             if (shapKeys.length > 0) {
-                aiShapContribs.innerHTML = shapKeys.map(k => `<li>• ${k.replace('_', ' ')}: ${shapDict[k]}%</li>`).join("");
+                aiShapContribs.innerHTML = shapKeys.map(k => `<li>• ${k}: ${shapDict[k]}</li>`).join("");
             } else {
                 aiShapContribs.innerHTML = "<li>None (100% healthy)</li>";
             }
@@ -556,6 +628,9 @@ document.addEventListener("DOMContentLoaded", () => {
      * Fetches connected devices from the FastAPI backend.
      */
     async function fetchDevices() {
+        if (sessionStorage.getItem("isLoggedIn") !== "true") {
+            return;
+        }
         try {
             const supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V";
             const res = await fetch(BACKEND_URL, {
@@ -567,7 +642,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             
             // Filter list of devices based on database user-device mappings
-            const loggedInEmail = localStorage.getItem("userEmail") || "";
+            const loggedInEmail = sessionStorage.getItem("userEmail") || "";
+            if (!loggedInEmail) return;
+            
             const allowedUuids = await fetchUserDeviceMappings(loggedInEmail);
             
             allDevicesList = data;
@@ -606,42 +683,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let filteredData = data;
             if (allowedUuids !== null) {
-                const prefix = loggedInEmail.split("@")[0].toLowerCase();
-                
-                // Scan all active devices in the database
-                data.forEach(row => {
-                    const devEmail = (row.payload?.system?.agent_email || "").toLowerCase();
-                    const devName = (row.device_name || "").toLowerCase();
-                    const winUser = (row.payload?.system?.username || "").toLowerCase();
-                    
-                    // Check if the device matches the user's email or prefix
-                    const isEmailMatch = devEmail && (devEmail === loggedInEmail.toLowerCase());
-                    let isPrefixMatch = false;
-                    if (prefix && prefix.length > 1) {
-                        const hasDevNameMatch = devName && devName.length > 1 && devName.includes(prefix);
-                        const hasWinUserMatch = winUser && winUser.length > 1 && (winUser.includes(prefix) || prefix.includes(winUser));
-                        isPrefixMatch = hasDevNameMatch || hasWinUserMatch;
-                    }
-                    
-                    if ((isEmailMatch || isPrefixMatch) && !allowedUuids.includes(row.device_uuid)) {
-                        console.log("Auto-mapping new device:", row.device_name, "to", loggedInEmail);
-                        allowedUuids.push(row.device_uuid);
-                        
-                        // Async write to database to persist this link permanently
-                        fetch("https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings", {
-                            method: "POST",
-                            headers: {
-                                "apikey": supabase_key,
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                username: loggedInEmail,
-                                device_uuid: row.device_uuid
-                            })
-                        }).catch(err => console.error("Error persisting auto-mapping:", err));
-                    }
-                });
-
                 filteredData = data.filter(row => allowedUuids.includes(row.device_uuid));
             }
             

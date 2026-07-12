@@ -77,79 +77,151 @@ def run_worker():
                 ssd_used = storage.get("disk_usage_percent", 50.0)
                 ssd_errs = disk_health.get("errors", 0)
                 
-                # Align values with model columns
-                input_data = {
-                    'cpu_usage': [cpu_usage],
-                    'cpu_temperature': [cpu_temp],
-                    'gpu_utilization': [gpu_util],
-                    'gpu_temperature': [gpu_temp],
-                    'memory_utilization': [memory_util],
-                    'battery_health': [bat_health],
-                    'ssd_storage_used': [ssd_used],
-                    'ssd_errors': [ssd_errs]
-                }
-                
-                df_input = pd.DataFrame(input_data)[feature_cols]
-                
-                # Run prediction
-                pred_health = float(model.predict(df_input)[0])
-                
-                # Run SHAP local explanation
-                shap_values = explainer(df_input)
-                shap_contribs = {}
-                for col, val in zip(feature_cols, shap_values.values[0]):
-                    # If SHAP value is negative, it represents health deduction
-                    if val < -0.05:
-                        shap_contribs[col] = round(float(val), 2)
-                
-                # Define risk
-                if pred_health < 80.0:
-                    risk = "High"
-                elif pred_health < 90.0:
-                    risk = "Medium"
-                else:
-                    risk = "Low"
-                    
-                # Remaining Useful Life (RUL) estimation model
-                # Base RUL for a brand new laptop is 36 months (3 years)
-                base_rul = 36.0
-                
-                # Apply multipliers based on health, thermal stress, and SSD error indicators
-                health_factor = (pred_health / 100.0) ** 1.5
-                
-                # Accelerated aging multipliers
-                thermal_multiplier = 1.0
-                if cpu_temp > 80.0 or gpu_temp > 75.0:
-                    thermal_multiplier = 0.7  # Silicon aging accelerates under heat
-                if cpu_temp > 90.0:
-                    thermal_multiplier = 0.4
-                    
-                ssd_multiplier = 1.0
-                if ssd_errs > 0:
-                    ssd_multiplier = max(0.1, 1.0 - (ssd_errs * 0.15))  # High disk error count decimates drive RUL
-                    
-                battery_multiplier = 1.0
-                if bat_health < 80.0:
-                    battery_multiplier = max(0.2, bat_health / 100.0)
-                    
-                rul_months = round(base_rul * health_factor * thermal_multiplier * ssd_multiplier * battery_multiplier, 1)
+                # Check if device is a laptop or phone
+                is_laptop = False
+                system_map = payload.get("system") if isinstance(payload.get("system"), dict) else {}
+                win_version = str(system_map.get("windows_version", "")).lower()
+                if (
+                    "windows" in name.lower() or 
+                    "laptop" in name.lower() or 
+                    "pc" in name.lower() or 
+                    "ashwin" in name.lower() or 
+                    "amudieshwar" in name.lower() or
+                    "devesh" in name.lower() or
+                    "windows" in win_version or
+                    "gpus" in payload or
+                    "disk_health" in payload
+                ):
+                    is_laptop = True
 
-                # Define rule-based explanations matching input profiles
-                explanations = []
-                if cpu_temp > 85.0:
-                    explanations.append("CPU thermal degradation (Arrhenius stress)")
-                if gpu_temp > 80.0:
-                    explanations.append("GPU thermal stress active")
-                if bat_health < 60.0:
-                    explanations.append("Battery capacity severely degraded")
-                if ssd_errs > 0:
-                    explanations.append(f"SSD disk errors detected: {ssd_errs} events")
-                if ssd_used > 90.0 and memory_util > 85.0:
-                    explanations.append("Memory page swap thrashing active")
+                if is_laptop:
+                    # Align values with model columns
+                    input_data = {
+                        'cpu_usage': [cpu_usage],
+                        'cpu_temperature': [cpu_temp],
+                        'gpu_utilization': [gpu_util],
+                        'gpu_temperature': [gpu_temp],
+                        'memory_utilization': [memory_util],
+                        'battery_health': [bat_health],
+                        'ssd_storage_used': [ssd_used],
+                        'ssd_errors': [ssd_errs]
+                    }
                     
-                if not explanations:
-                    explanations.append("All metrics within nominal limits")
+                    df_input = pd.DataFrame(input_data)[feature_cols]
                     
+                    # Run prediction
+                    pred_health = float(model.predict(df_input)[0])
+                    
+                    # Run SHAP local explanation
+                    shap_values = explainer(df_input)
+                    shap_contribs = {}
+                    for col, val in zip(feature_cols, shap_values.values[0]):
+                        # If SHAP value is negative, it represents health deduction
+                        if val < -0.05:
+                            shap_contribs[col] = round(float(val), 2)
+                    
+                    # Define risk
+                    if pred_health < 80.0:
+                        risk = "High"
+                    elif pred_health < 90.0:
+                        risk = "Medium"
+                    else:
+                        risk = "Low"
+                        
+                    # Remaining Useful Life (RUL) estimation model
+                    # Base RUL for a brand new laptop is 36 months (3 years)
+                    base_rul = 36.0
+                    
+                    # Apply multipliers based on health, thermal stress, and SSD error indicators
+                    health_factor = (pred_health / 100.0) ** 1.5
+                    
+                    # Accelerated aging multipliers
+                    thermal_multiplier = 1.0
+                    if cpu_temp > 80.0 or gpu_temp > 75.0:
+                        thermal_multiplier = 0.7  # Silicon aging accelerates under heat
+                    if cpu_temp > 90.0:
+                        thermal_multiplier = 0.4
+                        
+                    ssd_multiplier = 1.0
+                    if ssd_errs > 0:
+                        ssd_multiplier = max(0.1, 1.0 - (ssd_errs * 0.15))  # High disk error count decimates drive RUL
+                        
+                    battery_multiplier = 1.0
+                    if bat_health < 80.0:
+                        battery_multiplier = max(0.2, bat_health / 100.0)
+                        
+                    rul_months = round(base_rul * health_factor * thermal_multiplier * ssd_multiplier * battery_multiplier, 1)
+
+                    # Define rule-based explanations matching input profiles
+                    explanations = []
+                    if cpu_temp > 85.0:
+                        explanations.append("CPU thermal degradation (Arrhenius stress)")
+                    if gpu_temp > 80.0:
+                        explanations.append("GPU thermal stress active")
+                    if bat_health < 60.0:
+                        explanations.append("Battery capacity severely degraded")
+                    if ssd_errs > 0:
+                        explanations.append(f"SSD disk errors detected: {ssd_errs} events")
+                    if ssd_used > 90.0 and memory_util > 85.0:
+                        explanations.append("Memory page swap thrashing active")
+                        
+                    if not explanations:
+                        explanations.append("All metrics within nominal limits")
+                else:
+                    # Phone device! Use native OS remaining battery lifespan from payload
+                    rul_months = payload.get("native_remaining_useful_life_months") or payload.get("health_prediction", {}).get("remaining_useful_life_months", 36.0)
+                    try:
+                        rul_months = round(float(rul_months), 1)
+                    except (ValueError, TypeError):
+                        rul_months = 36.0
+                        
+                    # Base health from battery RUL
+                    base_health = (rul_months / 36.0) * 100.0
+                    
+                    # Apply operational deductions to get overall health score
+                    deductions = 0.0
+                    explanations = []
+                    
+                    # 1. Thermals (deductions for high temperature)
+                    if cpu_temp > 38.0:
+                        deductions += (cpu_temp - 38.0) * 1.5
+                        explanations.append(f"Thermal stress active ({cpu_temp}°C)")
+                    if cpu_temp > 42.0:
+                        deductions += (cpu_temp - 42.0) * 1.0
+                        
+                    # 2. Storage usage deductions
+                    if ssd_used > 75.0:
+                        deductions += (ssd_used - 75.0) * 0.4
+                        explanations.append(f"Storage capacity low ({ssd_used}% used)")
+                        
+                    # 3. CPU/RAM load deductions
+                    if cpu_usage > 80.0:
+                        deductions += (cpu_usage - 80.0) * 0.2
+                        explanations.append("High CPU processing load detected")
+                    if memory_util > 80.0:
+                        deductions += (memory_util - 80.0) * 0.3
+                        explanations.append("High RAM memory allocation active")
+                        
+                    pred_health = max(0.0, min(100.0, base_health - deductions))
+                    
+                    if not explanations:
+                        explanations.append("All metrics within nominal limits")
+                        
+                    if pred_health < 75.0:
+                        risk = "High"
+                    elif pred_health < 85.0:
+                        risk = "Medium"
+                    else:
+                        risk = "Low"
+                        
+                    shap_contribs = {
+                        "Thermal Stress": round(max(0.0, min(1.0, (cpu_temp - 35.0) / 15.0)), 3) if cpu_temp > 35.0 else 0.0,
+                        "Storage Space": round(max(0.0, min(1.0, (ssd_used - 50.0) / 50.0)), 3) if ssd_used > 50.0 else 0.0,
+                        "CPU Load": round(max(0.0, min(1.0, cpu_usage / 100.0)), 3),
+                        "RAM Allocation": round(max(0.0, min(1.0, memory_util / 100.0)), 3),
+                        "Battery Age (Cycles)": round(max(0.0, min(1.0, (100.0 - base_health) / 20.0)), 3)
+                    }
+
                 pred_block = {
                     "health": round(pred_health, 1),
                     "risk": risk,
