@@ -682,7 +682,30 @@ document.addEventListener("DOMContentLoaded", () => {
             const loggedInEmail = getStorageItem("userEmail") || "";
             if (!loggedInEmail) return;
             
-            const allowedUuids = await fetchUserDeviceMappings(loggedInEmail);
+            let allowedUuids = await fetchUserDeviceMappings(loggedInEmail);
+            
+            // Cross-device sync: fetch active devices from backend to filter out ones deleted from mobile/other sessions
+            try {
+                const backendRes = await fetch("https://deviceguardian-ai.onrender.com/devices");
+                if (backendRes.ok) {
+                    const backendData = await backendRes.json();
+                    const activeBackendIds = backendData.map(d => d.id);
+                    if (allowedUuids) {
+                        allowedUuids = allowedUuids.filter(uuid => activeBackendIds.includes(uuid));
+                    }
+                }
+            } catch (err) {
+                console.error("Backend sync check failed:", err);
+            }
+            
+            // Apply local hidden cache for instant removal
+            const hiddenStr = getStorageItem("hidden_devices") || "[]";
+            try {
+                const hidden = JSON.parse(hiddenStr);
+                if (allowedUuids) {
+                    allowedUuids = allowedUuids.filter(uuid => !hidden.includes(uuid));
+                }
+            } catch (e) {}
             
             allDevicesList = data;
             allowedUuidsCache = allowedUuids || [];
@@ -825,6 +848,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 
                 if (res.ok) {
+                    // Save to local hidden cache for instant UI removal
+                    try {
+                        const hiddenStr = getStorageItem("hidden_devices") || "[]";
+                        let hidden = JSON.parse(hiddenStr);
+                        if (!hidden.includes(selectedUuid)) {
+                            hidden.push(selectedUuid);
+                            localStorage.setItem("hidden_devices", JSON.stringify(hidden));
+                        }
+                    } catch (e) {}
+                    
                     alert("Device removed successfully!");
                     await fetchDevices();
                 } else {
