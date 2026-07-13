@@ -820,14 +820,8 @@ document.addEventListener("DOMContentLoaded", () => {
             btnRemoveDevice.textContent = "Removing...";
             
             try {
-                const supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V";
-                const accessToken = getStorageItem("accessToken") || supabase_key;
-                const res = await fetch(`https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings?device_uuid=eq.${selectedUuid}&username=eq.${encodeURIComponent(loggedInEmail.toLowerCase())}`, {
-                    method: "DELETE",
-                    headers: {
-                        "apikey": supabase_key,
-                        "Authorization": `Bearer ${accessToken}`
-                    }
+                const res = await fetch(`https://lapmonitoring.onrender.com/devices/${selectedUuid}`, {
+                    method: "DELETE"
                 });
                 
                 if (res.ok) {
