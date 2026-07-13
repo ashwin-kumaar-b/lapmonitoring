@@ -648,6 +648,8 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V";
             const res = await fetch(`https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings?username=eq.${encodeURIComponent(emailLower)}`, {
+                method: "GET",
+                cache: "no-store",
                 headers: {
                     "apikey": supabase_key
                 }
@@ -671,6 +673,8 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V";
             const res = await fetch(BACKEND_URL, {
+                method: "GET",
+                cache: "no-store",
                 headers: {
                     "apikey": supabase_key
                 }
@@ -687,7 +691,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Cross-device sync: fetch active devices from backend to filter out ones deleted from mobile/other sessions
             let backendDbData = [];
             try {
-                const backendRes = await fetch("https://deviceguardian-ai.onrender.com/devices");
+                const backendRes = await fetch("https://deviceguardian-ai.onrender.com/devices", { cache: "no-store" });
                 if (backendRes.ok) {
                     const rawList = await backendRes.json();
                     
@@ -704,7 +708,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         payload: {
                             system: { device_name: row.name },
                             cpu: { usage_percent: 15.0, temperature_c: 35.0 },
-                            battery: { level: row.battery || 100, is_charging: row.status === "Charging", health: "100%" },
+                            battery: { percentage: row.battery || 100, charging: row.status === "Charging", health: "100%" },
                             memory: { ram_usage_percent: 50.0 },
                             storage: { disk_usage_percent: 45.0 },
                             health_prediction: {
