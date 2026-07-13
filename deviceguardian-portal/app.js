@@ -55,13 +55,18 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleSignupLink.addEventListener("click", handleToggleSignup);
     }
 
+    // Helper to check both storage engines
+    function getStorageItem(key) {
+        return localStorage.getItem(key) || sessionStorage.getItem(key);
+    }
+
     // Check login state
-    if (sessionStorage.getItem("isLoggedIn") === "true") {
+    if (getStorageItem("isLoggedIn") === "true") {
         loginView.style.display = "none";
         appView.style.display = "block";
         btnNavSignout.style.display = "inline-block";
         if (userDisplay) {
-            userDisplay.textContent = sessionStorage.getItem("userEmail") || "";
+            userDisplay.textContent = getStorageItem("userEmail") || "";
             userDisplay.style.display = "inline-block";
         }
     } else {
@@ -124,6 +129,10 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         sessionStorage.removeItem("isLoggedIn");
         sessionStorage.removeItem("userEmail");
+        sessionStorage.removeItem("accessToken");
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("accessToken");
         appView.style.display = "none";
         loginView.style.display = "flex";
         btnNavSignout.style.display = "none";
@@ -247,11 +256,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     setTimeout(() => {
                         formEl.classList.remove("form-success");
                         
+                        // Select target storage engine based on "Remember me" state
+                        const storage = rememberMeCheckbox && rememberMeCheckbox.checked ? localStorage : sessionStorage;
+                        
                         if (isSignUpMode) {
                             // If auto-logged in, navigate to dashboard
                             if (responseData.access_token) {
-                                sessionStorage.setItem("userEmail", usernameOrEmail);
-                                sessionStorage.setItem("isLoggedIn", "true");
+                                storage.setItem("userEmail", usernameOrEmail);
+                                storage.setItem("isLoggedIn", "true");
+                                storage.setItem("accessToken", responseData.access_token);
                                 loginView.style.opacity = "0";
                                 setTimeout(() => {
                                     loginView.style.display = "none";
@@ -277,8 +290,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             }
                         } else {
                             // Sign in success
-                            sessionStorage.setItem("userEmail", usernameOrEmail);
-                            sessionStorage.setItem("isLoggedIn", "true");
+                            storage.setItem("userEmail", usernameOrEmail);
+                            storage.setItem("isLoggedIn", "true");
+                            if (responseData.access_token) {
+                                storage.setItem("accessToken", responseData.access_token);
+                            }
                             loginView.style.opacity = "0";
                             setTimeout(() => {
                                 loginView.style.display = "none";
@@ -649,7 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * Fetches connected devices from the FastAPI backend.
      */
     async function fetchDevices() {
-        if (sessionStorage.getItem("isLoggedIn") !== "true") {
+        if (getStorageItem("isLoggedIn") !== "true") {
             return;
         }
         try {
@@ -663,7 +679,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             
             // Filter list of devices based on database user-device mappings
-            const loggedInEmail = sessionStorage.getItem("userEmail") || "";
+            const loggedInEmail = getStorageItem("userEmail") || "";
             if (!loggedInEmail) return;
             
             const allowedUuids = await fetchUserDeviceMappings(loggedInEmail);
@@ -797,7 +813,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const confirmRemove = confirm("Are you sure you want to remove this device from your account?");
             if (!confirmRemove) return;
             
-            const loggedInEmail = sessionStorage.getItem("userEmail") || "";
+            const loggedInEmail = getStorageItem("userEmail") || "";
             if (!loggedInEmail) return;
             
             btnRemoveDevice.disabled = true;
@@ -805,11 +821,12 @@ document.addEventListener("DOMContentLoaded", () => {
             
             try {
                 const supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V";
+                const accessToken = getStorageItem("accessToken") || supabase_key;
                 const res = await fetch(`https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings?device_uuid=eq.${selectedUuid}&username=eq.${encodeURIComponent(loggedInEmail.toLowerCase())}`, {
                     method: "DELETE",
                     headers: {
                         "apikey": supabase_key,
-                        "Authorization": `Bearer ${supabase_key}`
+                        "Authorization": `Bearer ${accessToken}`
                     }
                 });
                 
