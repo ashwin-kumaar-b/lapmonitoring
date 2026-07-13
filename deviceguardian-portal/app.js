@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const themeToggleBtn = document.getElementById("theme-toggle-btn");
     const emailFieldError = document.getElementById("email-error");
     const btnNavSignout = document.getElementById("btn-nav-signout");
+    const userDisplay = document.getElementById("user-display");
 
     // Signup / Signin Mode elements & state
     let isSignUpMode = false;
@@ -59,10 +60,18 @@ document.addEventListener("DOMContentLoaded", () => {
         loginView.style.display = "none";
         appView.style.display = "block";
         btnNavSignout.style.display = "inline-block";
+        if (userDisplay) {
+            userDisplay.textContent = sessionStorage.getItem("userEmail") || "";
+            userDisplay.style.display = "inline-block";
+        }
     } else {
         loginView.style.display = "flex";
         appView.style.display = "none";
         btnNavSignout.style.display = "none";
+        if (userDisplay) {
+            userDisplay.style.display = "none";
+            userDisplay.textContent = "";
+        }
     }
 
     // Helper to toggle active class on focus for form fields
@@ -118,6 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
         appView.style.display = "none";
         loginView.style.display = "flex";
         btnNavSignout.style.display = "none";
+        if (userDisplay) {
+            userDisplay.style.display = "none";
+            userDisplay.textContent = "";
+        }
         emailInput.value = "";
         passwordInput.value = "";
         formFields.forEach(field => field.classList.remove("active"));
@@ -245,6 +258,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                     loginView.style.opacity = "1";
                                     appView.style.display = "block";
                                     btnNavSignout.style.display = "inline-block";
+                                    if (userDisplay) {
+                                        userDisplay.textContent = usernameOrEmail;
+                                        userDisplay.style.display = "inline-block";
+                                    }
                                     fetchDevices();
                                 }, 500);
                             } else {
@@ -268,6 +285,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                 loginView.style.opacity = "1";
                                 appView.style.display = "block";
                                 btnNavSignout.style.display = "inline-block";
+                                if (userDisplay) {
+                                    userDisplay.textContent = usernameOrEmail;
+                                    userDisplay.style.display = "inline-block";
+                                }
                                 fetchDevices();
                             }, 500);
                         }
