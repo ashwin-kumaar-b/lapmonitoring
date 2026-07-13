@@ -820,7 +820,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btnRemoveDevice.textContent = "Removing...";
             
             try {
-                const res = await fetch(`https://lapmonitoring.onrender.com/devices/${selectedUuid}`, {
+                const res = await fetch(`https://deviceguardian-ai.onrender.com/devices/${selectedUuid}`, {
                     method: "DELETE"
                 });
                 
