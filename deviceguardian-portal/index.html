@@ -86,8 +86,8 @@
         <!-- Navigation Header -->
         <header class="app-header">
             <div class="header-container">
-                <div class="logo-area">
-                    <span class="logo-shield">🛡️</span>
+                <div class="logo-area" style="display: flex; align-items: center; gap: 8px;">
+                    <img src="logo.png" alt="DeviceGuardian Logo" style="height: 28px; width: 28px; object-fit: contain;" />
                     <span class="logo-text">DeviceGuardian <span class="accent-text">AI</span></span>
                 </div>
                 <nav class="nav-links">
@@ -122,7 +122,7 @@
                 <div class="shield-container">
                     <div class="glow-ring"></div>
                     <div class="glow-ring-inner"></div>
-                    <img class="core-shield" src="logo.png" alt="DeviceGuardian Logo" style="object-fit: contain; padding: 20px; box-sizing: border-box; background: rgba(15, 23, 42, 0.85);" />
+                    <div class="core-shield">DG</div>
                 </div>
             </div>
         </section>
@@ -132,11 +132,14 @@
             <div class="section-header">
                 <h2>Real-Time Telemetry Dashboard</h2>
                 <p>Monitor your machines actively connected to the DeviceGuardian network</p>
-                <div class="device-select-wrapper">
+                <div class="device-select-wrapper" style="display: flex; align-items: center; gap: 12px; margin-top: 12px; justify-content: center;">
                     <label for="device-select" class="device-select-label">Active Laptop: </label>
                     <select id="device-select" class="device-dropdown">
                         <option value="simulation">📡 Demo Simulation (No Active Devices)</option>
                     </select>
+                    <button id="btn-remove-device" class="btn-remove" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #F87171; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: none; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                        <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Remove Device
+                    </button>
                 </div>
             </div>
             

@@ -747,6 +747,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Render selected device details
             const selectedUuid = deviceSelect.value;
+            const btnRemoveDevice = document.getElementById("btn-remove-device");
+            if (btnRemoveDevice) {
+                if (selectedUuid === "simulation") {
+                    btnRemoveDevice.style.display = "none";
+                } else {
+                    btnRemoveDevice.style.display = "flex";
+                }
+            }
             if (selectedUuid === "simulation") {
                 simulateMetrics();
             } else if (devicesCache[selectedUuid]) {
@@ -764,12 +772,63 @@ document.addEventListener("DOMContentLoaded", () => {
     // Event listener for toggle selection
     deviceSelect.addEventListener("change", () => {
         const val = deviceSelect.value;
+        const btnRemoveDevice = document.getElementById("btn-remove-device");
+        if (btnRemoveDevice) {
+            if (val === "simulation") {
+                btnRemoveDevice.style.display = "none";
+            } else {
+                btnRemoveDevice.style.display = "flex";
+            }
+        }
         if (val === "simulation") {
             simulateMetrics();
         } else if (devicesCache[val]) {
             updateWithRealData(devicesCache[val]);
         }
     });
+
+    // Wire up remove device click handler
+    const btnRemoveDevice = document.getElementById("btn-remove-device");
+    if (btnRemoveDevice) {
+        btnRemoveDevice.addEventListener("click", async () => {
+            const selectedUuid = deviceSelect.value;
+            if (selectedUuid === "simulation") return;
+            
+            const confirmRemove = confirm("Are you sure you want to remove this device from your account?");
+            if (!confirmRemove) return;
+            
+            const loggedInEmail = sessionStorage.getItem("userEmail") || "";
+            if (!loggedInEmail) return;
+            
+            btnRemoveDevice.disabled = true;
+            btnRemoveDevice.textContent = "Removing...";
+            
+            try {
+                const supabase_key = "sb_publishable_huLEhuc-J4bal6hQRkPf5w_O16MKv6V";
+                const res = await fetch(`https://lonsqhuudhiffjitmcbh.supabase.co/rest/v1/device_mappings?device_uuid=eq.${selectedUuid}&username=eq.${encodeURIComponent(loggedInEmail.toLowerCase())}`, {
+                    method: "DELETE",
+                    headers: {
+                        "apikey": supabase_key,
+                        "Authorization": `Bearer ${supabase_key}`
+                    }
+                });
+                
+                if (res.ok) {
+                    alert("Device removed successfully!");
+                    await fetchDevices();
+                } else {
+                    alert("Failed to remove device.");
+                }
+            } catch (err) {
+                console.error("Error removing device:", err);
+                alert("Network error. Failed to remove device.");
+            } finally {
+                btnRemoveDevice.disabled = false;
+                btnRemoveDevice.innerHTML = '<i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Remove Device';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        });
+    }
 
     // Poll backend every 3 seconds
     fetchDevices();
